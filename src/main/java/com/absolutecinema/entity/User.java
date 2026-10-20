@@ -1,5 +1,6 @@
 package com.absolutecinema.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Set;
 
@@ -15,6 +16,7 @@ public class User {
     private String username;
 
     @Column(name = "password", nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(name = "email", nullable = false)
@@ -33,13 +35,12 @@ public class User {
     private int points = 0;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private Set<Booking> bookings;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private Set<Feedback> feedbacks;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    private LoyaltyAccount loyaltyAccount;
 
     // Getters and Setters
 
@@ -121,16 +122,5 @@ public class User {
 
     public void setFeedbacks(Set<Feedback> feedbacks) {
         this.feedbacks = feedbacks;
-    }
-
-    public LoyaltyAccount getLoyaltyAccount() {
-        return loyaltyAccount;
-    }
-
-    public void setLoyaltyAccount(LoyaltyAccount loyaltyAccount) {
-        this.loyaltyAccount = loyaltyAccount;
-        if (loyaltyAccount != null && loyaltyAccount.getUser() != this) {
-            loyaltyAccount.setUser(this);
-        }
     }
 }

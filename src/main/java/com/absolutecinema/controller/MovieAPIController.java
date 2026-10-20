@@ -17,7 +17,7 @@ public class MovieAPIController {
 
     @GetMapping
     public ResponseEntity<List<Movie>> getAllMovies() {
-        List<Movie> movies = movieService.findAll();
+        List<Movie> movies = movieService.getAllMovies();
         return ResponseEntity.ok(movies);
     }
 
@@ -29,6 +29,8 @@ public class MovieAPIController {
 
     @PostMapping
     public ResponseEntity<Movie> createMovie(@RequestBody Movie movie) {
+        movie.setId(null);
+        movie.setTicketssold(0);
         Movie createdMovie = movieService.save(movie);
         return ResponseEntity.status(201).body(createdMovie);
     }

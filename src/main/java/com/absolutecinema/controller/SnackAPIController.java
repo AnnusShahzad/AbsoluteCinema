@@ -38,10 +38,8 @@ public class SnackAPIController {
     public ResponseEntity<Snack> createSnack(@RequestBody Snack snack) {
         try {
             logger.info("Creating new snack: {}", snack);
-            // Set default value for snackssold if not provided
-            if (snack.getSnackssold() == 0) {
-                snack.setSnackssold(0);
-            }
+            snack.setId(null);
+            snack.setSnackssold(0);
             Snack createdSnack = snackService.save(snack);
             logger.info("Successfully created snack with ID: {}", createdSnack.getId());
             return ResponseEntity.status(201).body(createdSnack);
@@ -53,20 +51,9 @@ public class SnackAPIController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Snack> updateSnack(@PathVariable Long id, @RequestBody Snack snack) {
-        try {
-            logger.info("Updating snack with ID {}: {}", id, snack);
-            if (!snackService.findById(id).isPresent()) {
-                logger.warn("Snack with ID {} not found", id);
-                return ResponseEntity.notFound().build();
-            }
-            snack.setId(id);
-            Snack updatedSnack = snackService.save(snack);
-            logger.info("Successfully updated snack with ID: {}", id);
-            return ResponseEntity.ok(updatedSnack);
-        } catch (Exception e) {
-            logger.error("Error updating snack with ID {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(null);
-        }
+        return snackService.updateSnack(id, snack)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

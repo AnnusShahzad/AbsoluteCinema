@@ -1,123 +1,165 @@
 package com.absolutecinema.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.absolutecinema.entity.Booking;
+import com.absolutecinema.entity.BookingSnack;
+import com.absolutecinema.entity.Feedback;
+import com.absolutecinema.entity.Movie;
+import com.absolutecinema.entity.Snack;
 import com.absolutecinema.repository.BookingRepository;
+import com.absolutecinema.repository.BookingSnackRepository;
 import com.absolutecinema.repository.FeedbackRepository;
 import com.absolutecinema.repository.MovieRepository;
 import com.absolutecinema.repository.SnackRepository;
-import com.absolutecinema.repository.BookingSnackRepository;
-import com.absolutecinema.repository.SessionRepository;
-import com.absolutecinema.repository.LoyaltyAccountRepository;
-import com.absolutecinema.entity.Movie;
-import com.absolutecinema.entity.Snack;
-import com.absolutecinema.entity.BookingSnack;
-import com.absolutecinema.entity.Booking;
-import com.absolutecinema.entity.Feedback;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class AnalyticsService {
 
-    @Autowired
-    private BookingRepository bookingRepository;
+    private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("MMM yy");
 
-    @Autowired
-    private FeedbackRepository feedbackRepository;
+    private final BookingRepository bookingRepository;
+    private final BookingSnackRepository bookingSnackRepository;
+    private final FeedbackRepository feedbackRepository;
+    private final MovieRepository movieRepository;
+    private final SnackRepository snackRepository;
+    private final LoyaltyService loyaltyService;
 
-    @Autowired
-    private MovieRepository movieRepository;
-
-    @Autowired
-    private SnackRepository snackRepository;
-
-    @Autowired
-    private BookingSnackRepository bookingSnackRepository;
-
-    @Autowired
-    private SessionRepository sessionRepository;
-
-    @Autowired
-    private LoyaltyAccountRepository loyaltyAccountRepository;
-
-    public Map<String, Object> generateReport() {
-        Map<String, Object> report = new HashMap<>();
-        report.put("totalBookings", bookingRepository.count());
-        report.put("totalFeedbacks", feedbackRepository.count());
-        report.put("totalMovies", movieRepository.count());
-        report.put("totalSnacks", snackRepository.count());
-        return report;
+    public AnalyticsService(BookingRepository bookingRepository,
+            BookingSnackRepository bookingSnackRepository,
+            FeedbackRepository feedbackRepository,
+            MovieRepository movieRepository,
+            SnackRepository snackRepository,
+            LoyaltyService loyaltyService) {
+        this.bookingRepository = bookingRepository;
+        this.bookingSnackRepository = bookingSnackRepository;
+        this.feedbackRepository = feedbackRepository;
+        this.movieRepository = movieRepository;
+        this.snackRepository = snackRepository;
+        this.loyaltyService = loyaltyService;
     }
 
-    public Map<String, Object> getAnalyticsData() {
-        Map<String, Object> analyticsData = new HashMap<>();
-        
-        // Get all movies and calculate total tickets sold
+    /** Model attributes for the admin dashboard. */
+    public Map<String, Object> getDashboardData() {
         List<Movie> movies = movieRepository.findAll();
-        int totalTicketsSold = movies.stream()
-            .mapToInt(Movie::getTicketssold)
-            .sum();
-        
-        // Get top 5 movies by ticket sales
-        List<Movie> topMovies = movies.stream()
-            .sorted((m1, m2) -> Integer.compare(m2.getTicketssold(), m1.getTicketssold()))
-            .limit(5)
-            .collect(Collectors.toList());
+        List<Booking> bookings = bookingRepository.findAll();
 
-        // Get total snacks sold from Snack table for the stat card
-        int totalSnacksSold = snackRepository.findAll().stream()
-            .mapToInt(Snack::getSnackssold)
-            .sum();
+        List<Feedback> recentFeedbacks = feedbackRepository.findAllByOrderByCreatedAtDesc().stream()
+                .limit(7)
+                .toList();
+        Map<Long, String> movieTitles = movieRepository.findAllById(
+                recentFeedbacks.stream().map(Feedback::getMovieId).distinct().toList()).stream()
+                .collect(Collectors.toMap(Movie::getId, Movie::getTitle));
 
-        // Count snacks from bookingsnacks table for the chart
-        int monthlySnacksSold = bookingSnackRepository.findAll().stream()
-            .mapToInt(BookingSnack::getQuantity)
-            .sum();
-
-        // Get monthly tickets sold from bookings table
-        int monthlyTicketsSold = bookingRepository.findAll().stream()
-            .mapToInt(Booking::getNumberOfTickets)
-            .sum();
-        
-        // Get total number of bookings
-        long totalBookings = bookingRepository.count();
-        
-        // Get total number of loyalty accounts
-        long totalLoyaltyMembers = loyaltyAccountRepository.count();
-
-        // Get most recent 7 feedbacks with movie titles
-        List<Feedback> recentFeedbacks = feedbackRepository.findAllByOrderByCreatedAtDesc()
-            .stream()
-            .limit(7)
-            .collect(Collectors.toList());
-        
-        // Create a map of movie IDs to titles for the feedback display
-        Map<Long, String> movieTitles = recentFeedbacks.stream()
-            .map(Feedback::getMovieId)
-            .distinct()
-            .collect(Collectors.toMap(
-                movieId -> movieId,
-                movieId -> movieRepository.findById(movieId)
-                    .map(Movie::getTitle)
-                    .orElse("Unknown Movie")
-            ));
-        
-        analyticsData.put("totalTicketsSold", totalTicketsSold);
-        analyticsData.put("topMovies", topMovies);
-        analyticsData.put("totalSnacksSold", totalSnacksSold);
-        analyticsData.put("totalBookings", totalBookings);
-        analyticsData.put("monthlySnacksSold", monthlySnacksSold);
-        analyticsData.put("monthlyTicketsSold", monthlyTicketsSold);
-        analyticsData.put("totalLoyaltyMembers", totalLoyaltyMembers);
-        analyticsData.put("recentFeedbacks", recentFeedbacks);
-        analyticsData.put("movieTitles", movieTitles);
-        
-        return analyticsData;
+        Map<String, Object> data = new HashMap<>();
+        data.put("totalTicketsSold", movies.stream().mapToInt(Movie::getTicketssold).sum());
+        data.put("totalSnacksSold", snackRepository.findAll().stream().mapToInt(Snack::getSnackssold).sum());
+        data.put("totalBookings", bookings.size());
+        data.put("totalLoyaltyMembers", loyaltyService.getMembers().size());
+        data.put("monthlyTicketsSold", bookings.stream().mapToInt(Booking::getNumberOfTickets).sum());
+        data.put("monthlySnacksSold", bookingSnackRepository.findAll().stream().mapToInt(BookingSnack::getQuantity).sum());
+        data.put("topMovies", topMovies(movies, 5));
+        data.put("recentFeedbacks", recentFeedbacks);
+        data.put("movieTitles", movieTitles);
+        return data;
     }
 
-    // Additional analytics methods can be added here
+    /** Sales report for the analytics page, with revenue for the last {@code months} months. */
+    public AnalyticsReport getReport(int months) {
+        List<Movie> movies = movieRepository.findAll();
+        List<Snack> snacks = snackRepository.findAll();
+        List<Booking> bookings = bookingRepository.findAll();
+
+        Map<Long, Double> snackRevenueByBooking = bookingSnackRepository.findAll().stream()
+                .collect(Collectors.groupingBy(bs -> bs.getBooking().getId(),
+                        Collectors.summingDouble(bs -> bs.getQuantity() * bs.getSnack().getPrice())));
+
+        YearMonth current = YearMonth.now();
+        Map<YearMonth, double[]> revenueByMonth = new LinkedHashMap<>();
+        for (int i = months - 1; i >= 0; i--) {
+            revenueByMonth.put(current.minusMonths(i), new double[2]);
+        }
+
+        double ticketRevenue = 0;
+        double snackRevenue = 0;
+        for (Booking booking : bookings) {
+            // Snack spend is capped at the amount paid, since loyalty discounts reduce the booking total
+            double snackPart = Math.min(snackRevenueByBooking.getOrDefault(booking.getId(), 0.0),
+                    booking.getTotalPrice());
+            double ticketPart = booking.getTotalPrice() - snackPart;
+            ticketRevenue += ticketPart;
+            snackRevenue += snackPart;
+
+            double[] month = revenueByMonth.get(YearMonth.from(booking.getBookingTime()));
+            if (month != null) {
+                month[0] += ticketPart;
+                month[1] += snackPart;
+            }
+        }
+
+        List<MonthlyRevenue> monthlyRevenue = new ArrayList<>();
+        revenueByMonth.forEach((month, revenue) -> monthlyRevenue.add(
+                new MonthlyRevenue(month.format(MONTH_LABEL), revenue[0], revenue[1])));
+
+        Map<String, Integer> ticketsByGenre = movies.stream()
+                .collect(Collectors.groupingBy(Movie::getGenre, Collectors.summingInt(Movie::getTicketssold)))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+
+        double averageRating = feedbackRepository.findAll().stream()
+                .mapToInt(Feedback::getRating)
+                .average()
+                .orElse(0);
+
+        return new AnalyticsReport(
+                movies.stream().mapToInt(Movie::getTicketssold).sum(),
+                snacks.stream().mapToInt(Snack::getSnackssold).sum(),
+                ticketRevenue,
+                snackRevenue,
+                bookings.size(),
+                averageRating,
+                monthlyRevenue,
+                topMovies(movies, 5),
+                snacks.stream().sorted(Comparator.comparingInt(Snack::getSnackssold).reversed()).limit(5).toList(),
+                ticketsByGenre);
+    }
+
+    private static List<Movie> topMovies(List<Movie> movies, int limit) {
+        return movies.stream()
+                .sorted(Comparator.comparingInt(Movie::getTicketssold).reversed())
+                .limit(limit)
+                .toList();
+    }
+
+    public record MonthlyRevenue(String label, double ticketRevenue, double snackRevenue) {
+    }
+
+    public record AnalyticsReport(
+            long ticketsSold,
+            long snacksSold,
+            double ticketRevenue,
+            double snackRevenue,
+            long bookings,
+            double averageRating,
+            List<MonthlyRevenue> monthlyRevenue,
+            List<Movie> topMovies,
+            List<Snack> topSnacks,
+            Map<String, Integer> ticketsByGenre) {
+
+        public double totalRevenue() {
+            return ticketRevenue + snackRevenue;
+        }
+    }
 }

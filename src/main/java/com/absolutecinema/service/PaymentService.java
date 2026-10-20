@@ -1,12 +1,14 @@
 package com.absolutecinema.service;
 
 import com.absolutecinema.entity.Booking;
+import com.absolutecinema.entity.Movie;
 import com.absolutecinema.entity.BookingSnack;
 import com.absolutecinema.entity.Snack;
 import com.absolutecinema.entity.User;
 import com.absolutecinema.repository.BookingRepository;
 import com.absolutecinema.repository.BookingSnackRepository;
 import com.absolutecinema.repository.SnackRepository;
+import com.absolutecinema.repository.MovieRepository;
 import com.absolutecinema.repository.UserRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -14,7 +16,6 @@ import com.stripe.model.PaymentIntent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,6 @@ import java.util.Map;
 @Service
 public class PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
-    private static final int POINTS_REQUIRED_FOR_REDEMPTION = 250;
     private static final double TICKET_PRICE = 12.0; // Base ticket price
     private static final double SNACK_PRICE = 5.0; // Base snack price
 
@@ -33,6 +33,7 @@ public class PaymentService {
     private final BookingSnackRepository bookingSnackRepository;
     private final SnackRepository snackRepository;
     private final UserRepository userRepository;
+    private final MovieRepository movieRepository;
 
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
@@ -40,15 +41,17 @@ public class PaymentService {
     public PaymentService(BookingRepository bookingRepository,
             BookingSnackRepository bookingSnackRepository,
             SnackRepository snackRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            MovieRepository movieRepository) {
         this.bookingRepository = bookingRepository;
         this.bookingSnackRepository = bookingSnackRepository;
         this.snackRepository = snackRepository;
         this.userRepository = userRepository;
+        this.movieRepository = movieRepository;
     }
 
     public boolean canRedeemPoints(User user) {
-        return user.getPoints() >= POINTS_REQUIRED_FOR_REDEMPTION;
+        return user.getPoints() >= LoyaltyService.REDEMPTION_COST;
     }
 
     public double calculateDiscount(User user, boolean applyRedemption) {
@@ -93,7 +96,7 @@ public class PaymentService {
                 finalAmount = Math.max(0, amount - discount);
 
                 // Deduct points from user
-                user.setPoints(user.getPoints() - POINTS_REQUIRED_FOR_REDEMPTION);
+                user.setPoints(user.getPoints() - LoyaltyService.REDEMPTION_COST);
                 userRepository.save(user);
                 logger.info("Applied loyalty points redemption for user: {}, discount: {}", user.getUsername(),
                         discount);
@@ -110,15 +113,20 @@ public class PaymentService {
             PaymentIntent paymentIntent = PaymentIntent.create(params);
 
             if ("succeeded".equals(paymentIntent.getStatus())) {
-                // Create booking
+                int ticketCount = seats != null ? seats.size() : 0;
                 Booking booking = new Booking();
                 booking.setUser(user);
                 booking.setMovieId(movieId);
                 booking.setSessionId(sessionId);
-                booking.setNumberOfTickets(seats != null ? seats.size() : 0);
+                booking.setNumberOfTickets(ticketCount);
                 booking.setTotalPrice(finalAmount);
                 booking.setBookingTime(java.time.LocalDateTime.now());
                 booking = bookingRepository.save(booking);
+
+                Movie movie = movieRepository.findById(movieId)
+                        .orElseThrow(() -> new IllegalArgumentException("Movie not found with ID: " + movieId));
+                movie.setTicketssold(movie.getTicketssold() + ticketCount);
+                movieRepository.save(movie);
 
                 // Process snacks if any
                 if (snacks != null && !snacks.isEmpty()) {
@@ -148,6 +156,7 @@ public class PaymentService {
 
                                 // Update snack quantity
                                 snack.setQuantity(snack.getQuantity() - quantity);
+                                snack.setSnackssold(snack.getSnackssold() + quantity);
                                 snackRepository.save(snack);
 
                                 // Create booking snack
@@ -169,9 +178,8 @@ public class PaymentService {
                 }
 
                 // Add loyalty points for the purchase (50 per ticket, 20 per snack)
-                int ticketPoints = (seats != null ? seats.size() : 0) * 50;
-                int snackPoints = snacks != null ? snacks.size() * 20 : 0;
-                user.setPoints(user.getPoints() + ticketPoints + snackPoints);
+                user.setPoints(user.getPoints()
+                        + LoyaltyService.pointsEarned(ticketCount, snacks != null ? snacks.size() : 0));
                 userRepository.save(user);
 
                 logger.info("Payment processed successfully for booking ID: {}", booking.getId());

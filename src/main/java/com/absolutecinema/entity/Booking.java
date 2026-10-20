@@ -33,4 +33,7 @@ public class Booking {
 
     @Transient
     private Movie movie;
+
+    @Transient
+    private Session session;
 }
