@@ -216,7 +216,7 @@
                     <li><a href="/employee/dashboard" class="nav-link px-2">Home</a></li>
                     <li><a href="/movies" class="nav-link px-2">Movies</a></li>
                     <li><a href="/bookings" class="nav-link px-2">Bookings</a></li>
-                    <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
+                    <li><a href="/user/snacks" class="nav-link px-2">Snacks</a></li>
                     <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
                     <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
                     <li><a href="/contact" class="nav-link px-2">Contact</a></li>
@@ -234,13 +234,13 @@
                 <div class="salary-card">
                     <div class="salary-header">
                         <h3 class="m-0">Current Month Salary</h3>
-                        <p class="m-0">{{ currentMonthSalary.month }} {{ currentMonthSalary.year }}</p>
+                        <p class="m-0">{{ month | date("MMMM yyyy") }}</p>
                     </div>
                     <div class="salary-body">
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h4>Current Salary</h4>
-                                <div class="salary-amount">${{ currentMonthSalary.salary|numberformat("#,##0.00") }}</div>
+                                <div class="salary-amount">PKR {{ salary | default(0) | numberformat("#,##0.00") }}</div>
                             </div>
                         </div>
                     </div>
@@ -254,11 +254,11 @@
                         <p class="m-0">This Month</p>
                     </div>
                     <div class="salary-body">
-                        {% for shift in currentMonthSalary.shifts %}
+                        {% for shift in shifts %}
                             <div class="shift-item">
-                                <div class="shift-date">{{ shift.date }}</div>
+                                <div class="shift-date">{{ shift.startTime | date("MMM dd, yyyy") }}</div>
                                 <div class="d-flex justify-content-between">
-                                    <div class="shift-time">{{ shift.startTime }} - {{ shift.endTime }}</div>
+                                    <div class="shift-time">{{ shift.startTime | date("HH:mm") }} - {{ shift.endTime | date("HH:mm") }}</div>
                                     <div class="shift-hours">{{ shift.hours }} hrs</div>
                                 </div>
                             </div>

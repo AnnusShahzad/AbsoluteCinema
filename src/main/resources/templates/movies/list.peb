@@ -1,6 +1,4 @@
-{#    {% extends "layout/page" %}#}
 
-{#    {% block content %}#}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -187,7 +185,7 @@
     <div class="grid-container">
         {% for movie in movies %}
         <div class="movie-card" onclick="window.location.href='/movies/{{ movie.id }}'">
-         <img src="/images/movies/default.jpg" alt="{{ movie.title }}" class="movie-poster">
+         <img src="{{ movie.posterUrl | default('/images/movies/default.svg') }}" onerror="this.onerror=null; this.src='/images/movies/default.svg'" alt="{{ movie.title }}" class="movie-poster">
             <div class="movie-title">{{ movie.title }}</div>
         </div>
         {% endfor %}
@@ -301,4 +299,3 @@
 </body>
 
 </html>
-{#{% endblock %}#}

@@ -477,6 +477,14 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .snack-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
         .snack-card:hover {
             transform: translateY(-5px);
             background: var(--card-hover);
@@ -629,7 +637,7 @@
                 <li><a href="/user/dashboard" class="nav-link px-2">Home</a></li>
                 <li><a href="/movies" class="nav-link px-2">Movies</a></li>
                 <li><a href="/bookings" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
+                <li><a href="/user/snacks" class="nav-link px-2">Snacks</a></li>
                 <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
                 <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
                 <li><a href="/contact" class="nav-link px-2">Contact</a></li>
@@ -647,6 +655,9 @@
                 {% for snack in snacks %}
                 <div class="col-md-6">
                     <div class="snack-card" data-snack-id="{{ snack.id }}">
+                        {% if snack.imageUrl is not null %}
+                        <img src="{{ snack.imageUrl }}" alt="{{ snack.name }}" class="snack-image" loading="lazy">
+                        {% endif %}
                         <h3 class="snack-title">{{ snack.name }}</h3>
                         <div class="snack-price">PKR {{ snack.price }}</div>
                         <div class="quantity-control">
@@ -905,115 +916,7 @@
         });
     });
 
-    const quantityInputs = document.querySelectorAll('.snack-quantity input[type="number"]');
-    const quantityAddButtons = document.querySelectorAll('.snack-quantity .quantity-btn:last-child');
-    const quantitySubtractButtons = document.querySelectorAll('.snack-quantity .quantity-btn:first-child');
-    const orderSummary = document.querySelector('.order-summary');
-
-    function updateOrderSummary() {
-        let total = 0;
-        let itemsHtml = '<h2>Order Summary</h2>';
-        const snackItems = document.querySelectorAll('.snack-item');
-
-        snackItems.forEach(item => {
-            const title = item.querySelector('.snack-title').textContent;
-            const price = parseFloat(item.querySelector('.snack-price').textContent.substring(1));
-            const quantityInput = item.querySelector('.quantity-input');
-            const quantity = parseInt(quantityInput.value);
-
-            if (quantity > 0) {
-                const itemTotal = price * quantity;
-                total += itemTotal;
-                itemsHtml += `
-                        <div class="order-item">
-                            <span>${title} (${quantity})</span>
-                            <span>$${itemTotal.toFixed(2)}</span>
-                        </div>
-                    `;
-            }
-        });
-
-        itemsHtml += `
-                <div class="order-total">
-                    <span>Total</span>
-                    <span>$${total.toFixed(2)}</span>
-                </div>
-                <button class="checkout-btn">Proceed to Checkout</button>
-            `;
-
-        orderSummary.innerHTML = itemsHtml;
-
-        const newCheckoutButton = orderSummary.querySelector('.checkout-btn');
-        if (newCheckoutButton) {
-            newCheckoutButton.addEventListener('click', () => {
-                alert('Proceeding to checkout with your selected snacks!');
-                // In a real application, you would handle the checkout process here.
-            });
-        }
-    }
-
-    quantityAddButtons.forEach((button, index) => {
-        button.addEventListener('click', () => {
-            const input = quantityInputs[index];
-            input.value = parseInt(input.value) + 1;
-            updateOrderSummary();
-        });
-    });
-
-    quantitySubtractButtons.forEach((button, index) => {
-        button.addEventListener('click', () => {
-            const input = quantityInputs[index];
-            if (parseInt(input.value) > 0) {
-                input.value = parseInt(input.value) - 1;
-                updateOrderSummary();
-            }
-        });
-    });
-
-    quantityInputs.forEach(input => {
-        input.addEventListener('change', updateOrderSummary);
-    });
-
-    // Initial update of the order summary
-    updateOrderSummary();
 </script>
 </body>
 
 </html>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Read order details from sessionStorage
-    const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
-    // Populate summary fields (adjust selectors as needed)
-    document.getElementById('movie-title').textContent = orderDetails.movieTitle || '';
-    document.getElementById('session-time').textContent = orderDetails.sessionTime || '';
-    document.getElementById('selected-seats').textContent = (orderDetails.seats || []).map(seat => `${seat.row}${seat.seat}`).join(', ');
-    document.getElementById('ticket-count').textContent = orderDetails.numberOfTickets || '';
-    document.getElementById('ticket-price').textContent = orderDetails.ticketPrice || '';
-    document.getElementById('snacks-total').textContent = orderDetails.snacksTotal || '';
-    document.getElementById('total-amount').textContent = orderDetails.totalAmount || '';
-});
-
-function continueToPayment() {
-    const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
-    // Collect selected snacks (adjust selectors as needed)
-    const snackSelections = Array.from(document.querySelectorAll('.snack-card')).map(card => {
-        const id = card.getAttribute('data-snack-id');
-        const name = card.querySelector('.snack-title')?.textContent || '';
-        const price = parseFloat(card.querySelector('.snack-price')?.textContent.replace('$', '') || '0');
-        const quantity = parseInt(card.querySelector('.snack-quantity')?.value || '0', 10);
-        return quantity > 0 ? { id, name, price, quantity } : null;
-    }).filter(Boolean);
-
-    const snacksTotal = snackSelections.reduce((sum, snack) => sum + snack.price * snack.quantity, 0);
-
-    orderDetails.snacks = snackSelections;
-    orderDetails.snacksTotal = snacksTotal;
-    orderDetails.totalAmount = (orderDetails.numberOfTickets * orderDetails.ticketPrice + snacksTotal).toFixed(2);
-
-    sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
-    window.location.href = '/user/payment';
-}
-document.getElementById('continueToPaymentBtn').addEventListener('click', continueToPayment);
-</script>

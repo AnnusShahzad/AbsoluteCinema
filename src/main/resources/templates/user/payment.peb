@@ -35,6 +35,8 @@
             border: 1px solid #9e9e9e;
         }
 </style>
+    <meta name="_csrf" content="{{ _csrf.token }}">
+    <meta name="_csrf_header" content="{{ _csrf.headerName }}">
 </head>
 <body>
     <div class="container mt-5">
@@ -95,11 +97,16 @@
 
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        // Initialize Stripe
-        const stripe = Stripe('{{ stripePublicKey }}');
-        const elements = stripe.elements();
-        const card = elements.create('card');
-        card.mount('#card-element');
+        // Initialize Stripe (card payments are disabled when no publishable key is configured)
+        const stripePublicKey = '{{ stripePublicKey | escape(strategy="js") }}';
+        const stripe = stripePublicKey ? Stripe(stripePublicKey) : null;
+        const card = stripe ? stripe.elements().create('card') : null;
+        if (card) {
+            card.mount('#card-element');
+        } else {
+            document.getElementById('card-errors').textContent =
+                'Card payments are not configured. Set STRIPE_PUBLIC_KEY and STRIPE_SECRET_KEY to enable them.';
+        }
 
         // Load and display order details
     document.addEventListener('DOMContentLoaded', function() {
@@ -169,6 +176,10 @@
             submitButton.disabled = true;
 
             try {
+                if (!stripe) {
+                    throw new Error('Card payments are not configured');
+                }
+
                 // Validate required fields
                 if (!window.orderDetails.movieId || !window.orderDetails.sessionId) {
                     throw new Error('Missing movie or session information');
@@ -221,6 +232,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
                     },
                     body: JSON.stringify(paymentData)
                 });

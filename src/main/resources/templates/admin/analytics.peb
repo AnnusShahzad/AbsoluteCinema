@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <link rel="stylesheet" href="/admin/analytics.css">
     <link rel="stylesheet" href="/topbar/bar.css">
+    <meta name="_csrf" content="{{ _csrf.token }}">
+    <meta name="_csrf_header" content="{{ _csrf.headerName }}">
 </head>
 <body>
 <!-- Theme Toggle -->
@@ -98,58 +100,50 @@
 
         <div class="d-flex flex-wrap align-items-center mt-3">
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
-                <li><a href="/admin/dashboard" class="nav-link px-2">Home</a></li>
-                <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-                <li><a href="/employee/dashboard" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
-                <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
-                <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
-                <li><a href="/contact" class="nav-link px-2">Contact</a></li>
+                <li><a href="/admin/dashboard" class="nav-link px-2">Dashboard</a></li>
+                <li><a href="/admin/analytics" class="nav-link px-2">Analytics</a></li>
+                <li><a href="/admin/manageproduct" class="nav-link px-2">Movies &amp; Snacks</a></li>
+                <li><a href="/admin/managebooking" class="nav-link px-2">Bookings</a></li>
+                <li><a href="/admin/manageloyalty" class="nav-link px-2">Loyalty</a></li>
+                <li><a href="/admin/managefeedback" class="nav-link px-2">Feedback</a></li>
+                <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
             </ul>
         </div>
     </div>
 </div>
         <!-- Page Header -->
         <div class="page-header">
-            <h2>User Analytics...</h2>
+            <h2>Sales Analytics</h2>
         </div>
 
         <!-- Stats Cards -->
         <div class="dashboard-stats">
             <div class="stat-card">
-                <div class="icon">
-                    <i class="fas fa-ticket-alt"></i>
-                </div>
+                <div class="icon"><i class="fas fa-ticket-alt"></i></div>
                 <div class="stat-info">
-                    <div class="label">Total Tickets Sold</div>
-                    <div class="value">142,876</div>
+                    <div class="label">Tickets Sold</div>
+                    <div class="value">{{ report.ticketsSold | numberformat("#,##0") }}</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="icon">
-                    <i class="fas fa-cookie"></i>
-                </div>
+                <div class="icon"><i class="fas fa-cookie"></i></div>
                 <div class="stat-info">
-                    <div class="label">Total Snacks Sold</div>
-                    <div class="value">98,532</div>
+                    <div class="label">Snacks Sold</div>
+                    <div class="value">{{ report.snacksSold | numberformat("#,##0") }}</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="icon">
-                    <i class="fas fa-dollar-sign"></i>
-                </div>
+                <div class="icon"><i class="fas fa-dollar-sign"></i></div>
                 <div class="stat-info">
-                    <div class="label">Total Revenue</div>
-                    <div class="value">$1,842,657</div>
+                    <div class="label">Booking Revenue</div>
+                    <div class="value">PKR {{ report.totalRevenue | numberformat("#,##0") }}</div>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="icon">
-                    <i class="fas fa-users"></i>
-                </div>
+                <div class="icon"><i class="fas fa-star"></i></div>
                 <div class="stat-info">
-                    <div class="label">Average Daily Visitors</div>
-                    <div class="value">1,248</div>
+                    <div class="label">Average Rating ({{ report.bookings }} bookings)</div>
+                    <div class="value">{{ report.averageRating | numberformat("0.0") }} / 5</div>
                 </div>
             </div>
         </div>
@@ -158,12 +152,7 @@
         <div class="charts-container">
             <div class="chart-card">
                 <div class="chart-header">
-                    <h4>Revenue: Movies and Snacks</h4>
-                    <div class="chart-actions">
-                        <button class="btn-outline">Weekly</button>
-                        <button class="btn-outline">Monthly</button>
-                        <button class="btn-outline">Yearly</button>
-                    </div>
+                    <h4>Monthly Revenue: Tickets and Snacks</h4>
                 </div>
                 <div class="chart-body">
                     <canvas id="revenueChart"></canvas>
@@ -171,7 +160,7 @@
             </div>
             <div class="chart-card">
                 <div class="chart-header">
-                    <h4>Total Revenue Split</h4>
+                    <h4>Revenue Split</h4>
                 </div>
                 <div class="chart-body">
                     <canvas id="revenueSplitChart"></canvas>
@@ -179,14 +168,14 @@
             </div>
         </div>
 
-        <!-- Audience Demographics and Top Movies -->
+        <!-- Genres and Top Movies -->
         <div class="charts-container">
             <div class="chart-card">
                 <div class="chart-header">
-                    <h4>Audience Demographics</h4>
+                    <h4>Tickets Sold by Genre</h4>
                 </div>
                 <div class="chart-body">
-                    <canvas id="demographicsChart"></canvas>
+                    <canvas id="genreChart"></canvas>
                 </div>
             </div>
             <div class="chart-card-stats">
@@ -195,42 +184,16 @@
                 </div>
                 <div class="chart-body">
                     <ul class="top-movies-list">
+                        {% for movie in report.topMovies %}
                         <li>
-                            <div class="movie-rank">1</div>
+                            <div class="movie-rank">{{ loop.index + 1 }}</div>
                             <div class="movie-info">
-                                <div class="movie-title">Cosmic Odyssey</div>
-                                <div class="movie-stats">
-                                    <span>28,345 tickets</span> •
-                                    <span class="demo-pill age-18-24">18-24</span>
-                                    <span class="demo-pill age-25-34">25-34</span>
-                                </div>
+                                <div class="movie-title">{{ movie.title }}</div>
+                                <div class="movie-stats"><span>{{ movie.genre }}</span> • <span>{{ movie.duration }} min</span></div>
                             </div>
-                            <div class="movie-revenue">$398,760</div>
+                            <div class="movie-revenue">{{ movie.ticketssold | numberformat("#,##0") }} tickets</div>
                         </li>
-                        <li>
-                            <div class="movie-rank">2</div>
-                            <div class="movie-info">
-                                <div class="movie-title">The Last Symphony</div>
-                                <div class="movie-stats">
-                                    <span>24,129 tickets</span> •
-                                    <span class="demo-pill age-25-34">25-34</span>
-                                    <span class="demo-pill age-35-44">35-44</span>
-                                </div>
-                            </div>
-                            <div class="movie-revenue">$349,870</div>
-                        </li>
-                        <li>
-                            <div class="movie-rank">3</div>
-                            <div class="movie-info">
-                                <div class="movie-title">Neon Shadows</div>
-                                <div class="movie-stats">
-                                    <span>21,853 tickets</span> •
-                                    <span class="demo-pill age-18-24">18-24</span>
-                                </div>
-                            </div>
-                            <div class="movie-revenue">$305,942</div>
-                        </li>
-
+                        {% endfor %}
                     </ul>
                 </div>
             </div>
@@ -244,297 +207,99 @@
                 </div>
                 <div class="chart-body">
                     <ul class="popular-snacks-list">
+                        {% for snack in report.topSnacks %}
                         <li>
-                            <div class="snack-icon">
-                                <i class="fas fa-bowl-food"></i>
-                            </div>
+                            <div class="snack-icon"><i class="fas fa-bowl-food"></i></div>
                             <div class="snack-info">
-                                <div class="snack-name">Large Popcorn</div>
-                                <div class="snack-stats">$8.99 each • 65% profit margin</div>
+                                <div class="snack-name">{{ snack.name }}</div>
+                                <div class="snack-stats">PKR {{ snack.price | numberformat("#,##0.00") }} each • {{ snack.quantity }} in stock</div>
                             </div>
-                            <div class="snack-quantity">32,476 sold</div>
+                            <div class="snack-quantity">{{ snack.snackssold | numberformat("#,##0") }} sold</div>
                         </li>
-                        <li>
-                            <div class="snack-icon">
-                                <i class="fas fa-mug-hot"></i>
-                            </div>
-                            <div class="snack-info">
-                                <div class="snack-name">Large Soda</div>
-                                <div class="snack-stats">$5.99 each • 78% profit margin</div>
-                            </div>
-                            <div class="snack-quantity">29,832 sold</div>
-                        </li>
-                        <li>
-                            <div class="snack-icon">
-                                <i class="fas fa-cubes-stacked"></i>
-                            </div>
-                            <div class="snack-info">
-                                <div class="snack-name">Chocolate Bars</div>
-                                <div class="snack-stats">$4.50 each • 58% profit margin</div>
-                            </div>
-                            <div class="snack-quantity">18,421 sold</div>
-                        </li>
-                        <li>
-                            <div class="snack-icon">
-                                <i class="fas fa-hamburger"></i>
-                            </div>
-                            <div class="snack-info">
-                                <div class="snack-name">Nachos with Cheese</div>
-                                <div class="snack-stats">$7.99 each • 62% profit margin</div>
-                            </div>
-                            <div class="snack-quantity">12,753 sold</div>
-                        </li>
-                        <li>
-                            <div class="snack-icon">
-                                <i class="fas fa-ice-cream"></i>
-                            </div>
-                            <div class="snack-info">
-                                <div class="snack-name">Ice Cream</div>
-                                <div class="snack-stats">$5.50 each • 70% profit margin</div>
-                            </div>
-                            <div class="snack-quantity">5,050 sold</div>
-                        </li>
+                        {% endfor %}
                     </ul>
                 </div>
             </div>
             <div class="chart-card">
                 <div class="chart-header">
-                    <h4>Monthly Snacks Revenue</h4>
+                    <h4>Snack Sales Value by Item</h4>
                 </div>
                 <div class="chart-body">
                     <canvas id="snacksRevenueChart"></canvas>
                 </div>
             </div>
         </div>
-    </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/topbar/bar.js"></script>
 <script>
-// Revenue Chart: Movies vs Snacks
-const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-const revenueChart = new Chart(revenueCtx, {
+const months = [{% for m in report.monthlyRevenue %}'{{ m.label | escape(strategy="js") }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+const monthlyTicketRevenue = [{% for m in report.monthlyRevenue %}{{ m.ticketRevenue }}{% if not loop.last %}, {% endif %}{% endfor %}];
+const monthlySnackRevenue = [{% for m in report.monthlyRevenue %}{{ m.snackRevenue }}{% if not loop.last %}, {% endif %}{% endfor %}];
+const genres = [{% for genre in report.ticketsByGenre %}'{{ genre.key | escape(strategy="js") }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+const genreTickets = [{% for genre in report.ticketsByGenre %}{{ genre.value }}{% if not loop.last %}, {% endif %}{% endfor %}];
+const snackNames = [{% for snack in report.topSnacks %}'{{ snack.name | escape(strategy="js") }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+const snackSalesValue = [{% for snack in report.topSnacks %}{{ snack.price * snack.snackssold }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+const axisColor = '#8a8d99';
+const gridColor = 'rgba(255, 255, 255, 0.05)';
+const pkr = value => 'PKR ' + Number(value).toLocaleString();
+const axes = (yFormat) => ({
+    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: axisColor, callback: yFormat } },
+    x: { grid: { color: gridColor }, ticks: { color: axisColor } }
+});
+
+new Chart(document.getElementById('revenueChart'), {
     type: 'line',
     data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        labels: months,
         datasets: [
-            {
-                label: 'Movie Revenue',
-                data: [125000, 132000, 143000, 155000, 168000, 180000, 192000, 185000, 175000, 165000, 158000, 172000],
-                borderColor: '#722ed1',
-                backgroundColor: 'rgba(114, 46, 209, 0.1)',
-                tension: 0.4,
-                fill: true
-            },
-            {
-                label: 'Snacks Revenue',
-                data: [62500, 65000, 72000, 78000, 85000, 92000, 98000, 94000, 88000, 82000, 79000, 86000],
-                borderColor: '#1677ff',
-                backgroundColor: 'rgba(22, 119, 255, 0.1)',
-                tension: 0.4,
-                fill: true
-            }
+            { label: 'Tickets', data: monthlyTicketRevenue, borderColor: '#722ed1', backgroundColor: 'rgba(114, 46, 209, 0.1)', tension: 0.4, fill: true },
+            { label: 'Snacks', data: monthlySnackRevenue, borderColor: '#1677ff', backgroundColor: 'rgba(22, 119, 255, 0.1)', tension: 0.4, fill: true }
         ]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    color: '#8a8d99'
-                }
-            },
-            tooltip: {
-                mode: 'index',
-                intersect: false
-            }
+            legend: { position: 'top', labels: { color: axisColor } },
+            tooltip: { mode: 'index', intersect: false, callbacks: { label: c => `${c.dataset.label}: ${pkr(c.raw)}` } }
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#8a8d99',
-                    callback: function(value) {
-                        return '$' + value.toLocaleString();
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#8a8d99'
-                }
-            }
-        }
+        scales: axes(pkr)
     }
 });
 
-// Revenue Split Chart
-const revenueSplitCtx = document.getElementById('revenueSplitChart').getContext('2d');
-const revenueSplitChart = new Chart(revenueSplitCtx, {
+new Chart(document.getElementById('revenueSplitChart'), {
     type: 'doughnut',
     data: {
-        labels: ['Movies', 'Popcorn', 'Beverages', 'Candy & Chocolate', 'Nachos & Hot Food', 'Ice Cream'],
-        datasets: [{
-            data: [65, 12, 10, 5, 5, 3],
-            backgroundColor: [
-                '#722ed1',
-                '#1677ff',
-                '#36cfc9',
-                '#faad14',
-                '#ff7a45',
-                '#9254de'
-            ],
-            borderWidth: 0
-        }]
+        labels: ['Tickets', 'Snacks'],
+        datasets: [{ data: [{{ report.ticketRevenue }}, {{ report.snackRevenue }}], backgroundColor: ['#722ed1', '#1677ff'], borderWidth: 0 }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: {
-                position: 'right',
-                labels: {
-                    color: '#8a8d99'
-                }
-            }
+            legend: { position: 'right', labels: { color: axisColor } },
+            tooltip: { callbacks: { label: c => `${c.label}: ${pkr(c.raw)}` } }
         },
         cutout: '70%'
     }
 });
 
-// Demographics Chart
-const demographicsCtx = document.getElementById('demographicsChart').getContext('2d');
-const demographicsChart = new Chart(demographicsCtx, {
+new Chart(document.getElementById('genreChart'), {
     type: 'bar',
-    data: {
-        labels: ['13-17', '18-24', '25-34', '35-44', '45+'],
-        datasets: [{
-            label: 'Audience Distribution',
-            data: [15, 28, 32, 18, 7],
-            backgroundColor: [
-                'rgba(114, 46, 209, 0.7)',
-                'rgba(22, 119, 255, 0.7)',
-                'rgba(0, 210, 190, 0.7)',
-                'rgba(250, 173, 20, 0.7)',
-                'rgba(245, 106, 76, 0.7)'
-            ],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return `${context.raw}% of audience`;
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#8a8d99',
-                    callback: function(value) {
-                        return value + '%';
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    display: false
-                },
-                ticks: {
-                    color: '#8a8d99'
-                }
-            }
-        }
-    }
+    data: { labels: genres, datasets: [{ label: 'Tickets sold', data: genreTickets, backgroundColor: 'rgba(114, 46, 209, 0.7)', borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: axes(v => v) }
 });
 
-// Snacks Revenue Chart
-const snacksRevenueCtx = document.getElementById('snacksRevenueChart').getContext('2d');
-const snacksRevenueChart = new Chart(snacksRevenueCtx, {
+new Chart(document.getElementById('snacksRevenueChart'), {
     type: 'bar',
-    data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-            {
-                label: 'Popcorn',
-                data: [28500, 30200, 33800, 36400, 39500, 42300, 45100, 43600, 40900, 38000, 36700, 39800],
-                backgroundColor: '#1677ff'
-            },
-            {
-                label: 'Beverages',
-                data: [21300, 22800, 25400, 27300, 29700, 31800, 33800, 32700, 30700, 28500, 27500, 29900],
-                backgroundColor: '#36cfc9'
-            },
-            {
-                label: 'Candy & Snacks',
-                data: [12700, 13500, 14800, 16300, 17800, 19000, 20200, 19500, 18300, 17000, 16400, 17800],
-                backgroundColor: '#faad14'
-            }
-        ]
-    },
+    data: { labels: snackNames, datasets: [{ label: 'Sales value', data: snackSalesValue, backgroundColor: '#36cfc9', borderWidth: 0 }] },
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    color: '#8a8d99'
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.dataset.label + ': $' + context.raw.toLocaleString();
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                stacked: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#8a8d99',
-                    callback: function(value) {
-                        return '$' + value.toLocaleString();
-                    }
-                }
-            },
-            x: {
-                stacked: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#8a8d99'
-                }
-            }
-        }
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => pkr(c.raw) } } },
+        scales: axes(pkr)
     }
 });
 </script>
