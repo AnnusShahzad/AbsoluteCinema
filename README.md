@@ -1,7 +1,5 @@
 <div align="center">
 
-# 🎬 Absolute Cinema
-
 **A full-stack cinema management platform: ticket booking, seat selection, snacks, Stripe payments, loyalty rewards, and admin analytics.**
 
 [![CI](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/ci.yml)
@@ -13,7 +11,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<img src="docs/screenshots/user-dashboard.png" alt="Absolute Cinema customer dashboard" width="900">
+<img src="docs/banner.png" alt="Absolute Cinema" width="900">
 
 </div>
 
@@ -27,30 +25,31 @@ It was built by a team of six, using GitHub issues for planning and pull request
 
 | Area | What it does |
 | --- | --- |
-| **Authentication & roles** | Spring Security form login with BCrypt password hashing. After login, users are routed to the customer, employee, or admin experience by account type. |
-| **Booking flow** | Multi-step wizard: movie → showtime → interactive seat map → snacks → payment. |
-| **Payments** | Stripe PaymentIntents, with the option to pay with loyalty points instead. |
-| **Loyalty program** | Points earned per ticket and snack, Bronze/Silver/Gold tiers, and redemption at checkout. |
-| **Booking history** | Customers can review past bookings with totals and session details. |
-| **Feedback** | Customers rate and review movies. Admins see sentiment counts and a 30-day rating trend. |
-| **Admin analytics** | Chart.js dashboards for tickets and snacks sold, revenue split, and most popular movies. |
-| **Employee portal** | Monthly salary and recent shifts for each staff member. |
-| **REST API** | JSON endpoints under `/api/{movies,sessions,snacks,users,loyalty,feedback}` drive the dynamic UI. |
-| **Theming** | Light/dark theme toggle, remembered across visits. |
+| **Authentication & roles** | Spring Security form login with BCrypt. Accounts map to `ROLE_USER`, `ROLE_EMPLOYEE` or `ROLE_ADMIN`; admin pages, staff pages and catalog writes are restricted per role, and every state-changing request is CSRF-protected. |
+| **Streaming-style home** | Featured hero, "Trending Now" poster row and a Top 3 ranking, all driven by live ticket sales. |
+| **Booking flow** | Movie → showtime → interactive seat map → snacks → Stripe payment. Successful payments record the booking, update stock and sales counters, and award loyalty points. |
+| **Loyalty program** | 50 points per ticket, 20 per snack, Bronze/Silver/Gold tiers, and 250 points redeemable for a free ticket and snack. |
+| **Admin console** | Dashboard, sales analytics (monthly ticket vs. snack revenue, genre breakdown, best sellers), movie and snack management with add/edit/delete, booking cancellation, loyalty members, and customer feedback trends. |
+| **Employee portal** | This month's shifts and salary for the signed-in staff member. |
+| **REST API** | JSON endpoints under `/api/{movies,sessions,snacks,feedback}` power the dynamic UI. |
 
 ## Screenshots
 
-| Sign in | Sign up |
+<img src="docs/screenshots/user-dashboard-full.png" alt="Customer home page" width="100%">
+
+| Movie catalog | Movie details |
 | --- | --- |
-| ![Sign in](docs/screenshots/login.png) | ![Sign up](docs/screenshots/register.png) |
+| ![Movie catalog](docs/screenshots/movies.png) | ![Movie details](docs/screenshots/movie-details.png) |
 | **Seat selection** | **Snacks** |
 | ![Seat selection](docs/screenshots/seat-selection.png) | ![Snack selection](docs/screenshots/snacks.png) |
-| **Loyalty program** | **Booking history** |
-| ![Loyalty program](docs/screenshots/loyalty.png) | ![Booking history](docs/screenshots/booking-history.png) |
-| **Admin dashboard** | **Admin analytics** |
-| ![Admin dashboard](docs/screenshots/admin-dashboard.png) | ![Admin analytics](docs/screenshots/admin-analytics.png) |
-| **Feedback management** | **Employee dashboard** |
-| ![Feedback management](docs/screenshots/admin-feedback.png) | ![Employee dashboard](docs/screenshots/employee-dashboard.png) |
+| **Sales analytics** | **Admin dashboard** |
+| ![Sales analytics](docs/screenshots/admin-analytics.png) | ![Admin dashboard](docs/screenshots/admin-dashboard.png) |
+| **Movie & snack management** | **Booking management** |
+| ![Catalog management](docs/screenshots/admin-catalog.png) | ![Booking management](docs/screenshots/admin-bookings.png) |
+| **Loyalty members** | **Feedback analytics** |
+| ![Loyalty members](docs/screenshots/admin-loyalty.png) | ![Feedback analytics](docs/screenshots/admin-feedback.png) |
+| **Sign in** | **Employee portal** |
+| ![Sign in](docs/screenshots/login.png) | ![Employee dashboard](docs/screenshots/employee-dashboard.png) |
 
 ## Tech stack
 
@@ -58,6 +57,7 @@ It was built by a team of six, using GitHub issues for planning and pull request
 - **Database:** PostgreSQL
 - **Views:** Pebble templates, Bootstrap 5, Chart.js, vanilla JavaScript
 - **Payments:** Stripe Java SDK and Stripe.js
+- **Testing:** JUnit 5, Mockito, AssertJ, Spring Security Test (MockMvc)
 - **Build & tooling:** Gradle (Kotlin DSL), Docker, Docker Compose, GitHub Actions
 
 ## Architecture
@@ -128,6 +128,14 @@ Requires JDK 17+ and a PostgreSQL instance.
 cp .env.example .env      # then edit the database URL, credentials, and Stripe keys
 ./gradlew bootRun
 ```
+
+## Testing
+
+```bash
+./gradlew test
+```
+
+Unit tests cover the analytics calculations (revenue split, monthly buckets, rankings), loyalty tiers and points, booking cancellation and snack updates. Web-layer tests check the security rules: anonymous users are sent to sign in, customers cannot reach admin pages or change the catalog, and requests without a CSRF token are rejected. CI runs the tests and builds the Docker image on every push.
 
 ## Team
 
