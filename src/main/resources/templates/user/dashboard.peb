@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
  <link rel="stylesheet" href="/user/dashboard.css">
+  <style>
+    .site-footer { margin-top: 64px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #8a8d99; font-size: 0.9rem; }
+    .site-footer a { color: #b9b4d6; text-decoration: none; }
+    .site-footer a:hover { color: #fff; }
+  </style>
 </head>
 <body>
   <!-- Theme Toggle -->
@@ -30,65 +35,19 @@
         <h1 class="logo-text m-0">Absolute Cinema</h1>
         <div class="search-container">
           <i class="bi bi-search search-icon"></i>
-          <input id="searchInput" type="search" class="form-control" placeholder="Search movies..." aria-label="Search" autocomplete="off">
+          <input id="searchInput" type="search" class="form-control" placeholder="Search movies..." aria-label="Search movies" autocomplete="off">
           <div id="filterDropdown" class="filter-dropdown dropdown-menu shadow" style="display: none;">
-            <div class="filter-section">
-              <div class="filter-section-title" onclick="toggleFilterSection('genre')">
-                Genre <i class="bi bi-chevron-down"></i>
+              <div class="filter-section">
+                  <div class="filter-section-title">Browse by genre</div>
+                  <a class="filter-option" href="/movies/search?genre=Action">Action</a>
+                  <a class="filter-option" href="/movies/search?genre=Animation">Animation</a>
+                  <a class="filter-option" href="/movies/search?genre=Comedy">Comedy</a>
+                  <a class="filter-option" href="/movies/search?genre=Drama">Drama</a>
+                  <a class="filter-option" href="/movies/search?genre=Horror">Horror</a>
+                  <a class="filter-option" href="/movies/search?genre=Romance">Romance</a>
+                  <a class="filter-option" href="/movies/search?genre=Sci-Fi">Sci-Fi</a>
+                  <a class="filter-option" href="/movies/search?genre=Thriller">Thriller</a>
               </div>
-              <div id="genreOptions" class="filter-options">
-                <div class="filter-option">Action</div>
-                <div class="filter-option">Adventure</div>
-                <div class="filter-option">Animation</div>
-                <div class="filter-option">Comedy</div>
-                <div class="filter-option">Crime</div>
-                <div class="filter-option">Documentary</div>
-                <div class="filter-option">Drama</div>
-                <div class="filter-option">Family</div>
-                <div class="filter-option">Fantasy</div>
-                <div class="filter-option">History</div>
-                <div class="filter-option">Horror</div>
-                <div class="filter-option">Music</div>
-                <div class="filter-option">Mystery</div>
-                <div class="filter-option">Romance</div>
-                <div class="filter-option">Science Fiction</div>
-                <div class="filter-option">Thriller</div>
-                <div class="filter-option">War</div>
-                <div class="filter-option">Western</div>
-              </div>
-            </div>
-
-            <div class="filter-section">
-              <div class="filter-section-title" onclick="toggleFilterSection('year')">
-                Release Year <i class="bi bi-chevron-down"></i>
-              </div>
-              <div id="yearOptions" class="filter-options">
-                <div class="filter-option">2025</div>
-                <div class="filter-option">2024</div>
-                <div class="filter-option">2023</div>
-                <div class="filter-option">2022</div>
-                <div class="filter-option">2021</div>
-                <div class="filter-option">2020</div>
-                <div class="filter-option">2019</div>
-                <div class="filter-option">2018</div>
-                <div class="filter-option">2017</div>
-                <div class="filter-option">2016</div>
-                <div class="filter-option">2015</div>
-              </div>
-            </div>
-
-            <div class="filter-section">
-              <div class="filter-section-title" onclick="toggleFilterSection('rating')">
-                Top Rated <i class="bi bi-chevron-down"></i>
-              </div>
-              <div id="ratingOptions" class="filter-options">
-                <div class="filter-option">9+ Rating</div>
-                <div class="filter-option">8+ Rating</div>
-                <div class="filter-option">7+ Rating</div>
-                <div class="filter-option">6+ Rating</div>
-                <div class="filter-option">5+ Rating</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -97,10 +56,11 @@
         <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
           <li><a href="/user/dashboard" class="nav-link px-2">Home</a></li>
           <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-          <li><a href="/bookings/history" class="nav-link px-2">Bookings</a></li>
-          <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
+          <li><a href="/bookings/history" class="nav-link px-2">My Bookings</a></li>
+          <li><a href="/loyalty" class="nav-link px-2">Loyalty</a></li>
           <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
           <li><a href="/contact" class="nav-link px-2">Contact</a></li>
+          <li><a href="/account/settings" class="nav-link px-2">Settings</a></li>
           <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
         </ul>
       </div>
@@ -197,59 +157,23 @@
       <div class="promo-content text-center">
         <h3 class="promo-title">Earn while you watch</h3>
         <p class="mb-4">Collect {{ pointsPerTicket }} points for every ticket and {{ pointsPerSnack }} for every snack.
-          Redeem {{ redemptionCost }} points for a free ticket and snack at checkout.</p>
+          Redeem {{ redemptionCost }} points for a free ticket at checkout.</p>
         <a class="btn banner-cta" href="/loyalty">View My Points</a>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-4">
-          <h3 class="logo-text mb-4">Absolute Cinema</h3>
-          <p class="mb-3">Experience the magic of movies in absolute comfort and cutting-edge technology.</p>
-          <div class="social-links">
-            <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-twitter-x"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-youtube"></i></a>
-          </div>
-        </div>
-        <div class="col-md-2">
-          <h5 class="footer-title">Quick Links</h5>
-          <ul class="footer-links">
-            <li><a href="#">Home</a></li>
-            <li><a href="#">Movies</a></li>
-            <li><a href="#">Bookings</a></li>
-            <li><a href="#">Snacks</a></li>
-            <li><a href="#">Contact</a></li>
-          </ul>
-        </div>
-        <div class="col-md-3">
-          <h5 class="footer-title">Support</h5>
-          <ul class="footer-links">
-            <li><a href="#">FAQs</a></li>
-            <li><a href="#">Help Center</a></li>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Refund Policy</a></li>
-          </ul>
-        </div>
-        <div class="col-md-3">
-          <h5 class="footer-title">Contact Us</h5>
-          <ul class="footer-links">
-            <li><i class="bi bi-geo-alt me-2"></i> 123 Cinema Plaza, LA</li>
-            <li><i class="bi bi-telephone me-2"></i> (555) 123-4567</li>
-            <li><i class="bi bi-envelope me-2"></i> info@absolutecinema.com</li>
-            <li><i class="bi bi-clock me-2"></i> Open daily: 10AM - 12AM</li>
-          </ul>
-        </div>
-      </div>
-      <div class="copyright">
-        <p>&copy; 2025 Absolute Cinema. All rights reserved.</p>
-      </div>
+  <footer class="site-footer">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-4">
+      <span>&copy; 2025 Absolute Cinema</span>
+      <nav class="d-flex flex-wrap gap-4" aria-label="Footer">
+        <a href="/movies">Movies</a>
+        <a href="/bookings/history">My Bookings</a>
+        <a href="/loyalty">Loyalty</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/contact">Contact</a>
+      </nav>
     </div>
   </footer>
 
@@ -283,109 +207,8 @@
       const slider = document.getElementById('slider');
       slider.scrollBy({ left: 300, behavior: 'smooth' });
     }
-
-    // Theme Toggle
-    document.querySelectorAll('[data-bs-theme-value]').forEach(button => {
-      button.addEventListener('click', () => {
-        const theme = button.getAttribute('data-bs-theme-value');
-        document.documentElement.setAttribute('data-bs-theme', theme);
-        localStorage.setItem('theme', theme);
-        document.querySelectorAll('[data-bs-theme-value]').forEach(btn => {
-          btn.parentElement.classList.remove('active');
-        });
-        button.parentElement.classList.add('active');
-      });
-    });
-
-    // Load saved theme
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        const activeBtn = document.querySelector(`[data-bs-theme-value="${savedTheme}"]`);
-        if (activeBtn) activeBtn.parentElement.classList.add('active');
-      }
-      
-      // Initialize animations
-      document.querySelectorAll('.fadeIn').forEach(el => {
-        el.style.opacity = '0';
-        setTimeout(() => {
-          el.style.opacity = '1';
-        }, 100);
-      });
-    });
-
-    // Search and Filter
-    const searchInput = document.getElementById('searchInput');
-    const dropdown = document.getElementById('filterDropdown');
-    
-    searchInput.addEventListener('focus', () => {
-      dropdown.style.display = 'block';
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (event) => {
-      if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.style.display = 'none';
-      }
-    });
-
-    function toggleFilterSection(sectionId) {
-      const options = document.getElementById(sectionId + 'Options');
-      const icon = event.currentTarget.querySelector('i');
-      
-      if (options.classList.contains('show')) {
-        options.classList.remove('show');
-        icon.classList.remove('bi-chevron-up');
-        icon.classList.add('bi-chevron-down');
-      } else {
-        options.classList.add('show');
-        icon.classList.remove('bi-chevron-down');
-        icon.classList.add('bi-chevron-up');
-      }
-      event.stopPropagation(); // Prevent event from bubbling up
-    }
-
-    document.querySelectorAll('.filter-option').forEach(option => {
-      option.addEventListener('click', function(event) {
-        event.stopPropagation(); // Prevent event from bubbling up
-        this.classList.toggle('selected');
-        // Here you can add logic to handle the selected filter
-        console.log('Selected filter:', this.textContent);
-      });
-    });
-
-    // Show a popup if booking was just completed
-    if (sessionStorage.getItem('bookingSuccess')) {
-        // Remove the flag so it only shows once
-        sessionStorage.removeItem('bookingSuccess');
-        // Use Bootstrap modal if available, else fallback to alert
-        if (window.bootstrap && document.getElementById('bookingSuccessModal')) {
-            var modal = new bootstrap.Modal(document.getElementById('bookingSuccessModal'));
-            modal.show();
-        } else {
-            alert('Booking successful! Your tickets have been booked.');
-        }
-    }
   </script>
+  <script src="/topbar/bar.js"></script>
 
-  <!-- Modal HTML (Bootstrap) -->
-  <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="bookingSuccessModalLabel">Booking Successful!</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>Your booking was successful. Thank you for choosing Absolute Cinema!</p>
-          <p>You can view your tickets and booking details below.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
 </html>

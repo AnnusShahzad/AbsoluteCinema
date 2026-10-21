@@ -640,7 +640,12 @@
         color: var(--accent-color);
         }
     </style>
-    </head>
+      <style>
+    .site-footer { margin-top: 64px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #8a8d99; font-size: 0.9rem; }
+    .site-footer a { color: #b9b4d6; text-decoration: none; }
+    .site-footer a:hover { color: #fff; }
+  </style>
+</head>
 
     <body>
     <!-- Theme Toggle -->
@@ -670,14 +675,15 @@
 
         <div class="d-flex flex-wrap align-items-center mt-3">
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
-            <li><a href="/" class="nav-link px-2">Home</a></li>
+            <li><a href="/user/dashboard" class="nav-link px-2">Home</a></li>
             <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-            <li><a href="/bookings" class="nav-link px-2">Bookings</a></li>
-            <li><a href="/user/snacks" class="nav-link px-2">Snacks</a></li>
-            <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
+            <li><a href="/bookings/history" class="nav-link px-2">My Bookings</a></li>
+            <li><a href="/loyalty" class="nav-link px-2">Loyalty</a></li>
             <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
             <li><a href="/contact" class="nav-link px-2">Contact</a></li>
-            </ul>
+            <li><a href="/account/settings" class="nav-link px-2">Settings</a></li>
+            <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+          </ul>
         </div>
         </div>
     </div>
@@ -726,20 +732,16 @@
             <div class="movie-info-box fadeIn">
                 <h3 class="movie-info-title">{{ movie.title }}</h3>
                 <div class="movie-info-item">
-                    <i class="bi bi-calendar3"></i>
-                    <span>Today (Apr 28, 2025)</span>
+                    <i class="bi bi-film"></i>
+                    <span>{{ movie.genre }} • {{ movie.language }}</span>
                 </div>
                 <div class="movie-info-item">
                     <i class="bi bi-clock"></i>
-                    <span>7:30 PM</span>
+                    <span>{{ movie.duration }} min</span>
                 </div>
                 <div class="movie-info-item">
                     <i class="bi bi-ticket-perforated"></i>
-                    <span>Gold (PKR 1500)</span>
-                </div>
-                <div class="movie-info-item">
-                    <i class="bi bi-film"></i>
-                    <span>Hall 3, Screen 2</span>
+                    <span>Regular PKR {{ regularPrice | numberformat("#,##0") }} • Premium (rows A-B) PKR {{ premiumPrice | numberformat("#,##0") }}</span>
                 </div>
                 
                 <!-- Session Selection -->
@@ -748,11 +750,12 @@
                     <select class="form-select" id="sessionSelect">
                         <option value="">Choose a show time...</option>
                         {% for session in sessions %}
-                        <option value="{{ session.id }}" data-session-time="{{ session.sessionTime }}" data-available-seats="{{ session.availableSeats }}">
-                            {{ session.sessionTime }}
-                        </option>
+                        <option value="{{ session.id }}">{{ session.sessionTime | date("EEE, dd MMM yyyy • HH:mm") }}</option>
                         {% endfor %}
                     </select>
+                    {% if sessions is empty %}
+                    <p class="text-muted small mt-2">No upcoming showtimes for this movie.</p>
+                    {% endif %}
                 </div>
             </div>
             
@@ -808,8 +811,8 @@
                 <div class="seat-gap"></div>
                 <div class="seat premium" data-row="A" data-seat="5" style="text-align: center;">5</div>
                 <div class="seat premium" data-row="A" data-seat="6" style="text-align: center;">6</div>
-                <div class="seat premium occupied" data-row="A" data-seat="7" style="text-align: center;">7</div>
-                <div class="seat premium occupied" data-row="A" data-seat="8" style="text-align: center;">8</div>
+                <div class="seat premium" data-row="A" data-seat="7" style="text-align: center;">7</div>
+                <div class="seat premium" data-row="A" data-seat="8" style="text-align: center;">8</div>
                 <div class="seat-gap"></div>
                 <div class="seat premium" data-row="A" data-seat="9" style="text-align: center;">9</div>
                 <div class="seat premium" data-row="A" data-seat="10" style="text-align: center;">10</div>
@@ -822,7 +825,7 @@
                 <div class="row-label">B</div>
                 <div class="seat premium" data-row="B" data-seat="1" style="text-align: center;">1</div>
                 <div class="seat premium" data-row="B" data-seat="2" style="text-align: center;">2</div>
-                <div class="seat premium occupied" data-row="B" data-seat="3" style="text-align: center;">3</div>
+                <div class="seat premium" data-row="B" data-seat="3" style="text-align: center;">3</div>
                 <div class="seat premium" data-row="B" data-seat="4" style="text-align: center;">4</div>
                 <div class="seat-gap"></div>
                 <div class="seat premium" data-row="B" data-seat="5" style="text-align: center;">5</div>
@@ -831,7 +834,7 @@
                 <div class="seat premium" data-row="B" data-seat="8" style="text-align: center;">8</div>
                 <div class="seat-gap"></div>
                 <div class="seat premium" data-row="B" data-seat="9" style="text-align: center;">9</div>
-                <div class="seat premium occupied" data-row="B" data-seat="10" style="text-align: center;">10</div>
+                <div class="seat premium" data-row="B" data-seat="10" style="text-align: center;">10</div>
                 <div class="seat premium" data-row="B" data-seat="11" style="text-align: center;">11</div>
                 <div class="seat premium" data-row="B" data-seat="12" style="text-align: center;">12</div>
             </div>
@@ -845,8 +848,8 @@
                 <div class="seat" data-row="C" data-seat="4" style="text-align: center;">4</div>
                 <div class="seat-gap"></div>
                 <div class="seat" data-row="C" data-seat="5" style="text-align: center;">5</div>
-                <div class="seat occupied" data-row="C" data-seat="6" style="text-align: center;">6</div>
-                <div class="seat occupied" data-row="C" data-seat="7" style="text-align: center;">7</div>
+                <div class="seat" data-row="C" data-seat="6" style="text-align: center;">6</div>
+                <div class="seat" data-row="C" data-seat="7" style="text-align: center;">7</div>
                 <div class="seat" data-row="C" data-seat="8" style="text-align: center;">8</div>
                 <div class="seat-gap"></div>
                 <div class="seat" data-row="C" data-seat="9" style="text-align: center;">9</div>
@@ -860,16 +863,16 @@
                 <div class="row-label">D</div>
                 <div class="seat" data-row="D" data-seat="1" style="text-align: center;">1</div>
                 <div class="seat" data-row="D" data-seat="2" style="text-align: center;">2</div>
-                <div class="seat occupied" data-row="D" data-seat="3" style="text-align: center;">3</div>
-                <div class="seat occupied" data-row="D" data-seat="4" style="text-align: center;">4</div>
+                <div class="seat" data-row="D" data-seat="3" style="text-align: center;">3</div>
+                <div class="seat" data-row="D" data-seat="4" style="text-align: center;">4</div>
                 <div class="seat-gap"></div>
                 <div class="seat" data-row="D" data-seat="5" style="text-align: center;">5</div>
                 <div class="seat" data-row="D" data-seat="6" style="text-align: center;">6</div>
                 <div class="seat" data-row="D" data-seat="7" style="text-align: center;">7</div>
                 <div class="seat" data-row="D" data-seat="8" style="text-align: center;">8</div>
                 <div class="seat-gap"></div>
-                <div class="seat occupied" data-row="D" data-seat="9" style="text-align: center;">9</div>
-                <div class="seat occupied" data-row="D" data-seat="10" style="text-align: center;">10</div>
+                <div class="seat" data-row="D" data-seat="9" style="text-align: center;">9</div>
+                <div class="seat" data-row="D" data-seat="10" style="text-align: center;">10</div>
                 <div class="seat" data-row="D" data-seat="11" style="text-align: center;">11</div>
                 <div class="seat" data-row="D" data-seat="12" style="text-align: center;">12</div>
             </div>
@@ -899,7 +902,7 @@
             <div class="row-label">F</div>
             <div class="seat" data-row="F" data-seat="1" style="text-align: center;">1</div>
             <div class="seat" data-row="F" data-seat="2" style="text-align: center;">2</div>
-            <div class="seat occupied" data-row="F" data-seat="3" style="text-align: center;">3</div>
+            <div class="seat" data-row="F" data-seat="3" style="text-align: center;">3</div>
             <div class="seat" data-row="F" data-seat="4" style="text-align: center;">4</div>
             <div class="seat-gap"></div>
             <div class="seat" data-row="F" data-seat="5" style="text-align: center;">5</div>
@@ -908,7 +911,7 @@
             <div class="seat" data-row="F" data-seat="8" style="text-align: center;">8</div>
             <div class="seat-gap"></div>
             <div class="seat" data-row="F" data-seat="9" style="text-align: center;">9</div>
-            <div class="seat occupied" data-row="F" data-seat="10" style="text-align: center;">10</div>
+            <div class="seat" data-row="F" data-seat="10" style="text-align: center;">10</div>
             <div class="seat" data-row="F" data-seat="11" style="text-align: center;">11</div>
             <div class="seat" data-row="F" data-seat="12" style="text-align: center;">12</div>
           </div>
@@ -921,8 +924,8 @@
             <div class="seat" data-row="G" data-seat="3" style="text-align: center;">3</div>
             <div class="seat" data-row="G" data-seat="4" style="text-align: center;">4</div>
             <div class="seat-gap"></div>
-            <div class="seat occupied" data-row="G" data-seat="5" style="text-align: center;">5</div>
-            <div class="seat occupied" data-row="G" data-seat="6" style="text-align: center;">6</div>
+            <div class="seat" data-row="G" data-seat="5" style="text-align: center;">5</div>
+            <div class="seat" data-row="G" data-seat="6" style="text-align: center;">6</div>
             <div class="seat" data-row="G" data-seat="7" style="text-align: center;">7</div>
             <div class="seat" data-row="G" data-seat="8" style="text-align: center;">8</div>
             <div class="seat-gap"></div>
@@ -947,8 +950,8 @@
             <div class="seat-gap"></div>
             <div class="seat" data-row="H" data-seat="9" style="text-align: center;">9</div>
             <div class="seat" data-row="H" data-seat="10" style="text-align: center;">10</div>
-            <div class="seat occupied" data-row="H" data-seat="11" style="text-align: center;">11</div>
-            <div class="seat occupied" data-row="H" data-seat="12" style="text-align: center;">12</div>
+            <div class="seat" data-row="H" data-seat="11" style="text-align: center;">11</div>
+            <div class="seat" data-row="H" data-seat="12" style="text-align: center;">12</div>
           </div>
         </div>
       </div>
@@ -956,202 +959,112 @@
   </div>
 
   <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-3 col-md-6 mb-4">
-          <h4 class="footer-title">Absolute Cinema</h4>
-          <p class="mb-4">Experience movies like never before with our state-of-the-art technology and premium comfort.</p>
-          <div class="social-links">
-            <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-twitter-x"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
-            <a href="#" class="social-link"><i class="bi bi-youtube"></i></a>
-          </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-          <h4 class="footer-title">Quick Links</h4>
-          <ul class="footer-links">
-            <li><a href="#">Now Showing</a></li>
-            <li><a href="#">Coming Soon</a></li>
-            <li><a href="#">Cinema Locations</a></li>
-            <li><a href="#">Gift Cards</a></li>
-            <li><a href="#">Promotions</a></li>
-          </ul>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-          <h4 class="footer-title">Information</h4>
-          <ul class="footer-links">
-            <li><a href="#">About Us</a></li>
-            <li><a href="#">Corporate Events</a></li>
-            <li><a href="#">Corporate Packages</a></li>
-            <li><a href="#">Career</a></li>
-            <li><a href="#">Terms of Service</a></li>
-          </ul>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-4">
-          <h4 class="footer-title">Contact Us</h4>
-          <ul class="footer-links">
-            <li><i class="bi bi-geo-alt me-2"></i> 123 Cinema Street, Karachi</li>
-            <li><i class="bi bi-telephone me-2"></i> (021) 1234-5678</li>
-            <li><i class="bi bi-envelope me-2"></i> info@absolutecinema.com</li>
-          </ul>
-        </div>
-      </div>
-      <div class="copyright">
-        <p>&copy; 2025 Absolute Cinema. All Rights Reserved.</p>
-      </div>
+  <footer class="site-footer">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-4">
+      <span>&copy; 2025 Absolute Cinema</span>
+      <nav class="d-flex flex-wrap gap-4" aria-label="Footer">
+        <a href="/movies">Movies</a>
+        <a href="/bookings/history">My Bookings</a>
+        <a href="/loyalty">Loyalty</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/contact">Contact</a>
+      </nav>
     </div>
   </footer>
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/topbar/bar.js"></script>
   <script>
-    // Move continueToSnacks function outside DOMContentLoaded
-    function continueToSnacks() {
-        // Collect selected seats as objects with row, seat, premium, price
-        const selectedSeats = Array.from(document.querySelectorAll('.seat.selected')).map(seat => ({
-            row: seat.getAttribute('data-row'),
-            seat: seat.getAttribute('data-seat'),
-            premium: seat.classList.contains('premium'),
-            price: 12 // PKR 12 per ticket for all seats (adjust if you want premium pricing)
-        }));
-        const numberOfTickets = selectedSeats.length;
+    const regularPrice = {{ regularPrice }};
+    const premiumPrice = {{ premiumPrice }};
+    const movieId = '{{ movie.id }}';
+    const sessionSelect = document.getElementById('sessionSelect');
+    const seatElements = document.querySelectorAll('.seat');
+    const selectedSeatsContainer = document.getElementById('selectedSeatsContainer');
+    const continueBtn = document.getElementById('continueBtn');
+    const totalPriceElement = document.querySelector('.total-price-value');
+    let selectedSeats = [];
 
-        // Get movie/session info (adjust selectors as needed)
-        const movieTitle = document.querySelector('.movie-info-title')?.textContent || '';
-        const movieId = document.getElementById('movie-id')?.value || null;
-        const sessionSelect = document.getElementById('sessionSelect');
-        const sessionId = sessionSelect.value;
-        const sessionTime = sessionId ? sessionSelect.options[sessionSelect.selectedIndex].text : '';
+    const seatLabel = seat => seat.dataset.row + seat.dataset.seat;
+    const formatPkr = amount => `PKR ${amount.toLocaleString()}`;
 
-        // Build orderDetails object
-        const orderDetails = {
-            movieTitle,
-            movieId,
-            sessionTime,
-            sessionId,
-            seats: selectedSeats,
-            numberOfTickets,
-            ticketPrice: 12,
-            snacks: [],
-            snacksTotal: 0,
-            totalAmount: (numberOfTickets * 12).toFixed(2)
-        };
-        sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
-        // Also store individual fields for compatibility
-        sessionStorage.setItem('movieTitle', movieTitle);
-        sessionStorage.setItem('movieId', movieId);
-        sessionStorage.setItem('sessionTime', sessionTime);
-        sessionStorage.setItem('sessionId', sessionId);
-        sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
-        window.location.href = '/user/snacks';
+    function renderSelection() {
+      if (selectedSeats.length === 0) {
+        selectedSeatsContainer.innerHTML = '<p class="text-center text-muted">No seats selected yet</p>';
+      } else {
+        const list = document.createElement('ul');
+        list.className = 'selected-seats';
+        selectedSeats.forEach(seat => {
+          const item = document.createElement('li');
+          item.className = 'selected-seat-item';
+          item.innerHTML = '<span></span><span class="seat-price"></span>';
+          item.children[0].textContent = `${seat.label}${seat.premium ? ' (Premium)' : ''}`;
+          item.children[1].textContent = formatPkr(seat.price);
+          list.appendChild(item);
+        });
+        selectedSeatsContainer.replaceChildren(list);
+      }
+      totalPriceElement.textContent = formatPkr(selectedSeats.reduce((sum, seat) => sum + seat.price, 0));
+      continueBtn.disabled = selectedSeats.length === 0 || !sessionSelect.value;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-      // Animation on scroll
-      const fadeElems = document.querySelectorAll('.fadeIn');
-      fadeElems.forEach(el => {
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-      });
-      
-      // Theme toggler
-      const themeTogglers = document.querySelectorAll('.theme-item');
-      themeTogglers.forEach(toggler => {
-        toggler.addEventListener('click', () => {
-          const theme = toggler.getAttribute('data-bs-theme-value');
-          document.documentElement.setAttribute('data-bs-theme', theme);
-          
-          // Update active class
-          themeTogglers.forEach(t => t.classList.remove('active'));
-          toggler.classList.add('active');
-          
-          // Update icon
-          const icon = document.querySelector('#themeToggle i');
-          if (theme === 'light') {
-            icon.className = 'bi bi-sun-fill';
-          } else if (theme === 'dark') {
-            icon.className = 'bi bi-moon-stars-fill';
-          } else {
-            icon.className = 'bi bi-circle-half';
-          }
-        });
-      });
-      
-      // Seat selection functionality
-      const seats = document.querySelectorAll('.seat:not(.occupied)');
-      const selectedSeatsContainer = document.getElementById('selectedSeatsContainer');
-      const continueBtn = document.getElementById('continueBtn');
-      const totalPriceElement = document.querySelector('.total-price-value');
-      
-      let selectedSeats = [];
-      const regularPrice = 1500;
-      const premiumPrice = 2000;
-      
-      seats.forEach(seat => {
-        seat.addEventListener('click', () => {
-          seat.classList.toggle('selected');
-          
-          const row = seat.getAttribute('data-row');
-          const seatNum = seat.getAttribute('data-seat');
-          const isPremium = seat.classList.contains('premium');
-          const seatInfo = {
-            row: row,
-            seat: seatNum,
-            premium: isPremium,
-            price: isPremium ? premiumPrice : regularPrice
-          };
-          
-          if (seat.classList.contains('selected')) {
-            selectedSeats.push(seatInfo);
-          } else {
-            selectedSeats = selectedSeats.filter(s => !(s.row === row && s.seat === seatNum));
-          }
-          
-          updateSelectedSeatsUI();
-        });
-      });
-      
-      function updateSelectedSeatsUI() {
-        if (selectedSeats.length === 0) {
-          selectedSeatsContainer.innerHTML = '<p class="text-center text-muted">No seats selected yet</p>';
-          continueBtn.disabled = true;
-        } else {
-          selectedSeatsContainer.innerHTML = '<ul class="selected-seats"></ul>';
-          const selectedSeatsList = selectedSeatsContainer.querySelector('.selected-seats');
-          
-          let totalPrice = 0;
-          
-          selectedSeats.forEach(seat => {
-            const li = document.createElement('li');
-            li.className = 'selected-seat-item';
-            
-            const seatLabel = document.createElement('span');
-            seatLabel.textContent = `${seat.row}${seat.seat} ${seat.premium ? '(Premium)' : ''}`;
-            
-            const seatPrice = document.createElement('span');
-            seatPrice.className = 'seat-price';
-            seatPrice.textContent = `PKR ${seat.price}`;
-            
-            li.appendChild(seatLabel);
-            li.appendChild(seatPrice);
-            selectedSeatsList.appendChild(li);
-            
-            totalPrice += seat.price;
-          });
-          
-          totalPriceElement.textContent = `PKR ${totalPrice}`;
-          continueBtn.disabled = false;
-        }
+    // Marks seats sold for the chosen showtime; no seat can be picked until a showtime is chosen.
+    async function loadOccupiedSeats() {
+      selectedSeats = [];
+      seatElements.forEach(seat => seat.classList.remove('selected', 'occupied'));
+      if (!sessionSelect.value) {
+        seatElements.forEach(seat => seat.classList.add('occupied'));
+        renderSelection();
+        return;
       }
-      
-      // Update continue button click handler
-      continueBtn.addEventListener('click', continueToSnacks);
+      try {
+        const response = await fetch(`/api/sessions/${sessionSelect.value}/occupied-seats`);
+        const occupied = new Set(await response.json());
+        seatElements.forEach(seat => seat.classList.toggle('occupied', occupied.has(seatLabel(seat))));
+      } catch (error) {
+        console.error(error);
+        alert('Could not load seat availability. Please try again.');
+      }
+      renderSelection();
+    }
+
+    seatElements.forEach(seat => {
+      seat.addEventListener('click', () => {
+        if (seat.classList.contains('occupied')) {
+          return;
+        }
+        const label = seatLabel(seat);
+        if (seat.classList.toggle('selected')) {
+          const premium = seat.classList.contains('premium');
+          selectedSeats.push({ label, premium, price: premium ? premiumPrice : regularPrice });
+        } else {
+          selectedSeats = selectedSeats.filter(s => s.label !== label);
+        }
+        renderSelection();
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      const orderDetails = {
+        movieId,
+        movieTitle: document.querySelector('.movie-info-title').textContent,
+        sessionId: sessionSelect.value,
+        sessionTime: sessionSelect.options[sessionSelect.selectedIndex].text,
+        seats: selectedSeats,
+        snacks: {}
+      };
+      sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
+      window.location.href = '/user/snacks';
+    });
+
+    sessionSelect.addEventListener('change', loadOccupiedSeats);
+    loadOccupiedSeats();
+
+    document.querySelectorAll('.fadeIn').forEach(el => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
     });
   </script>
-
-  <!-- Add hidden input for movieId -->
-  <input type="hidden" id="movie-id" value="{{ movie.id }}">
 </body>
 </html>

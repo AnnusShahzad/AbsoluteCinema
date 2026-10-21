@@ -36,7 +36,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<Booking> getUserBookings(User user) {
-        return withDetails(bookingRepository.findByUser(user));
+        return withDetails(bookingRepository.findByUserOrderByBookingTimeDesc(user));
     }
 
     /** Every booking, newest first, for the admin view. */

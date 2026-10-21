@@ -1,6 +1,7 @@
 package com.absolutecinema.controller;
 
 import com.absolutecinema.service.MovieService;
+import com.absolutecinema.service.PaymentService;
 import com.absolutecinema.service.SessionService;
 import com.absolutecinema.service.SnackService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +31,12 @@ public class UserController {
         }
 
         // Get available sessions for the movie
-        var sessions = sessionService.getAvailableSessions(movieId);
+        var sessions = sessionService.getUpcomingSessions(movieId);
 
         model.addAttribute("movie", movie);
         model.addAttribute("sessions", sessions);
+        model.addAttribute("regularPrice", PaymentService.REGULAR_SEAT_PRICE);
+        model.addAttribute("premiumPrice", PaymentService.PREMIUM_SEAT_PRICE);
         return "user/seats";
     }
 

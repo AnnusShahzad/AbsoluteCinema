@@ -1,129 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Successful - Absolute Cinema</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #0a0a0a;
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .success-container {
-            background-color: #1a1a1a;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            max-width: 600px;
-            width: 90%;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
-        }
-
-        .success-icon {
-            color: #28a745;
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
-        .success-title {
-            color: #ffd700;
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-
-        .success-message {
-            font-size: 18px;
-            margin-bottom: 30px;
-            color: #cccccc;
-        }
-
-        .ticket-details {
-            background-color: #2a2a2a;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: left;
-        }
-
-        .ticket-details h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
-        }
-
-        .ticket-details p {
-            margin-bottom: 10px;
-            color: #cccccc;
-        }
-
-        .btn-home {
-            background-color: #ffd700;
-            color: #000000;
-            padding: 12px 30px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .btn-home:hover {
-            background-color: #ffed4a;
-            transform: translateY(-2px);
-        }
-    </style>
+    <title>Booking Confirmed - Absolute Cinema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/checkout.css">
 </head>
 <body>
-    <div class="success-container">
-        <div class="success-icon">
-            <i class="fas fa-check-circle"></i>
-        </div>
-        <h1 class="success-title">Payment Successful!</h1>
-        <p class="success-message">Thank you for your purchase. Your tickets have been confirmed.</p>
-        
-        <div class="ticket-details">
-            <h3>Booking Details</h3>
-            <div id="bookingDetails">
-                <!-- Booking details will be populated by JavaScript -->
-            </div>
+<header class="checkout-header">
+    <a class="checkout-logo" href="/user/dashboard">Absolute Cinema</a>
+</header>
+
+<main class="checkout-main" style="max-width: 760px;">
+    <section class="checkout-card">
+        <p class="mb-2" style="color: #46d369; font-weight: 700;"><i class="bi bi-check-circle-fill"></i> Booking confirmed</p>
+        <h1 class="h3 fw-bold mb-4">Enjoy the show!</h1>
+
+        <div class="ticket mb-4">
+            <img src="{{ booking.movie.posterUrl | default('/images/movies/default.svg') }}" alt="{{ booking.movie.title }} poster">
+            <dl>
+                <dt>Movie</dt><dd>{{ booking.movie.title }}</dd>
+                <dt>Showtime</dt><dd>{{ booking.session.sessionTime | date("EEE, dd MMM yyyy • HH:mm") }}</dd>
+                <dt>Seats</dt><dd>{{ booking.seats }}</dd>
+                <dt>Booking</dt><dd>#B{{ booking.id }}</dd>
+                <dt>Paid</dt><dd>PKR {{ booking.totalPrice | numberformat("#,##0") }}</dd>
+                <dt>Points</dt><dd>{{ points | numberformat("#,##0") }} loyalty points</dd>
+            </dl>
         </div>
 
-        <a href="/" class="btn btn-home">Return to Home</a>
-    </div>
-
-    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load booking details from sessionStorage
-            const seats = JSON.parse(sessionStorage.getItem('selectedSeats') || '[]');
-            const snacks = JSON.parse(sessionStorage.getItem('cart') || '[]');
-            
-            const bookingDetails = document.getElementById('bookingDetails');
-            
-            // Display seats
-            if (seats.length > 0) {
-                const seatsHtml = seats.map(seat => 
-                    `<p>Seat: ${seat.row}${seat.number} - ${seat.isPremium ? 'Premium' : 'Regular'} (PKR ${seat.price})</p>`
-                ).join('');
-                bookingDetails.innerHTML += seatsHtml;
-            }
-            
-            // Display snacks
-            if (snacks.length > 0) {
-                const snacksHtml = snacks.map(snack => 
-                    `<p>${snack.name} x ${snack.quantity} - PKR ${snack.price * snack.quantity}</p>`
-                ).join('');
-                bookingDetails.innerHTML += snacksHtml;
-            }
-            
-            // Clear session storage after displaying details
-            sessionStorage.removeItem('selectedSeats');
-            sessionStorage.removeItem('cart');
-        });
-    </script>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn-ghost" href="/bookings/history"><i class="bi bi-receipt"></i> My bookings</a>
+            <a class="btn-ghost" href="/user/dashboard"><i class="bi bi-house"></i> Back to home</a>
+        </div>
+    </section>
+</main>
 </body>
-</html> 
+</html>

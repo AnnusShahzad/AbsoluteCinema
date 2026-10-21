@@ -1,258 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-bs-theme="dark">
 <head>
-<title>Payment - Absolute Cinema</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-        .StripeElement {
-            box-sizing: border-box;
-    height: 40px;
-            padding: 10px 12px;
-            border: 1px solid #ccd0d5;
-            border-radius: 4px;
-            background-color: white;
-        }
-        .StripeElement--focus {
-            border-color: #80bdff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-        }
-        .StripeElement--invalid {
-            border-color: #dc3545;
-    }
-        .loyalty-section {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .loyalty-section.eligible {
-            background-color: #e8f5e9;
-            border: 1px solid #4caf50;
-        }
-        .loyalty-section.not-eligible {
-            background-color: #f5f5f5;
-            border: 1px solid #9e9e9e;
-        }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Absolute Cinema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/checkout.css">
     <meta name="_csrf" content="{{ _csrf.token }}">
     <meta name="_csrf_header" content="{{ _csrf.headerName }}">
 </head>
 <body>
-    <div class="container mt-5">
-    <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Payment Details</h4>
-                    </div>
-                    <div class="card-body">
-                        <div id="order-summary" class="mb-4">
-                            <h5>Order Summary</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Movie:</strong> <span id="movie-title"></span></p>
-                                    <p><strong>Session:</strong> <span id="session-time"></span></p>
-                                    <p><strong>Seats:</strong> <span id="selected-seats"></span></p>
-                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Number of Tickets:</strong> <span id="ticket-count"></span></p>
-                                    <p><strong>Snacks:</strong> <span id="selected-snacks"></span></p>
-                                    <p><strong>Total Amount:</strong> PKR <span id="total-amount"></span></p>
-                    </div>
-                    </div>
-                </div>
+<header class="checkout-header">
+    <a class="checkout-logo" href="/user/dashboard">Absolute Cinema</a>
+    <nav class="checkout-steps" aria-label="Booking progress">
+        <span class="done"><i class="bi bi-check-circle-fill"></i> Seats</span>
+        <span class="done"><i class="bi bi-check-circle-fill"></i> Snacks</span>
+        <span class="current">Payment</span>
+    </nav>
+</header>
 
-                        <!-- Loyalty Points Section -->
-                        <div id="loyalty-section" class="loyalty-section mb-4">
-                            <h5>Loyalty Points</h5>
-                            <p>Your current points: <strong>{{ user.points }}</strong></p>
-                            {% if user.points >= 250 %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="redeem-points" name="redeem-points">
-                                    <label class="form-check-label" for="redeem-points">
-                                        Redeem 250 points for a free movie ticket and snack (PKR {{ ticketPrice + snackPrice }} value)
-                                    </label>
-                                </div>
-                            {% else %}
-                                <p class="text-muted">You need 250 points to redeem for a free movie ticket and snack. Keep earning!</p>
-                            {% endif %}
-                        </div>
-
-                        <form id="payment-form">
-                    <div class="form-group">
-                                <label for="card-element">Credit or Debit Card</label>
-                                <div id="card-element" class="StripeElement"></div>
-                                <div id="card-errors" class="text-danger mt-2" role="alert"></div>
-                    </div>
-                            <button type="submit" class="btn btn-primary mt-3" id="submit-button">
-                                Pay PKR <span id="payment-amount"></span>
-                            </button>
-                        </form>
-                    </div>
+<main class="checkout-main">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="checkout-card">
+                <h2>Order summary</h2>
+                <p class="mb-1 fw-semibold" id="movie-title"></p>
+                <p class="muted" id="session-time"></p>
+                <div id="summary-lines">
+                    <p class="muted">Calculating your total...</p>
                 </div>
-            </div>
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <section class="checkout-card">
+                <h2>Payment</h2>
+
+                {% if user.points >= redemptionCost %}
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="redeem-points">
+                    <label class="form-check-label" for="redeem-points">
+                        Use {{ redemptionCost }} of your {{ user.points }} points for a free ticket
+                    </label>
+                </div>
+                {% else %}
+                <p class="muted small">You have {{ user.points }} loyalty points. At {{ redemptionCost }} points you can redeem a free ticket.</p>
+                {% endif %}
+
+                <form id="payment-form" novalidate>
+                    {% if demoMode %}
+                    <p class="notice"><i class="bi bi-info-circle"></i> Demo mode: Stripe keys are not configured, so this booking is confirmed without charging a card.</p>
+                    {% else %}
+                    <label for="card-element" class="form-label">Card details</label>
+                    <div id="card-element" class="card-field"></div>
+                    {% endif %}
+                    <p id="payment-error" class="error-text" role="alert"></p>
+                    <button type="submit" class="btn-accent" id="submit-button" disabled>
+                        <i class="bi bi-lock-fill"></i> Pay <span id="payment-amount"></span>
+                    </button>
+                </form>
+            </section>
         </div>
     </div>
+</main>
 
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        // Initialize Stripe (card payments are disabled when no publishable key is configured)
-        const stripePublicKey = '{{ stripePublicKey | escape(strategy="js") }}';
-        const stripe = stripePublicKey ? Stripe(stripePublicKey) : null;
-        const card = stripe ? stripe.elements().create('card') : null;
-        if (card) {
-            card.mount('#card-element');
-        } else {
-            document.getElementById('card-errors').textContent =
-                'Card payments are not configured. Set STRIPE_PUBLIC_KEY and STRIPE_SECRET_KEY to enable them.';
-        }
+{% if not demoMode %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endif %}
+<script>
+    const csrf = {
+        [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
+    };
+    const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
+    const redeemCheckbox = document.getElementById('redeem-points');
+    const submitButton = document.getElementById('submit-button');
+    const errorText = document.getElementById('payment-error');
+    const formatPkr = amount => `PKR ${amount.toLocaleString()}`;
 
-        // Load and display order details
-    document.addEventListener('DOMContentLoaded', function() {
-            // Use orderDetails object for all data
-            const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
-            const movieTitle = orderDetails.movieTitle || sessionStorage.getItem('movieTitle') || '';
-            const sessionTime = orderDetails.sessionTime || sessionStorage.getItem('sessionTime') || '';
-            const movieId = orderDetails.movieId || sessionStorage.getItem('movieId') || '';
-            const sessionId = orderDetails.sessionId || sessionStorage.getItem('sessionId') || '';
-            const seats = orderDetails.seats || JSON.parse(sessionStorage.getItem('selectedSeats') || '[]');
-            const snacks = orderDetails.snacks || JSON.parse(sessionStorage.getItem('selectedSnacks') || '{}');
-            const ticketPrice = orderDetails.ticketPrice || 12;
-            // Display seats
-            const seatDisplay = Array.isArray(seats) ? seats.map(seat => {
-                if (typeof seat === 'object' && seat !== null) {
-                    return `Row ${seat.row} Seat ${seat.seat}`;
-                }
-                return seat;
-            }).join(', ') : '';
-            // Display snacks
-            const snackDisplay = Object.values(snacks).map(snack => `${snack.name} x ${snack.quantity}`).join(', ');
-            // Calculate totals
-            const seatTotal = seats.length * ticketPrice;
-            const snackTotal = Object.values(snacks).reduce((sum, snack) => sum + (snack.price * snack.quantity), 0);
-            const totalAmount = seatTotal + snackTotal;
-            // Update display
-            document.getElementById('movie-title').textContent = movieTitle;
-            document.getElementById('session-time').textContent = sessionTime;
-            document.getElementById('selected-seats').textContent = seatDisplay;
-            document.getElementById('ticket-count').textContent = seats.length;
-            document.getElementById('selected-snacks').textContent = snackDisplay;
-            document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
-            document.getElementById('payment-amount').textContent = totalAmount.toFixed(2);
-            // Store order details for payment processing
-            window.orderDetails = {
-                movieId,
-                sessionId,
-                seats,
-                snacks,
-                totalAmount
-            };
+    const stripeKey = '{{ stripePublicKey | escape(strategy="js") }}';
+    const stripe = window.Stripe && stripeKey ? Stripe(stripeKey) : null;
+    const card = stripe ? stripe.elements().create('card', { style: { base: { color: '#f2f2f7', fontSize: '16px' } } }) : null;
+    if (card) {
+        card.mount('#card-element');
+    }
 
-            // Handle loyalty points redemption
-            const redeemCheckbox = document.getElementById('redeem-points');
-            if (redeemCheckbox) {
-                redeemCheckbox.addEventListener('change', function() {
-                    const paymentAmountElement = document.getElementById('payment-amount');
-                    const totalAmountElement = document.getElementById('total-amount');
-                    const currentTotal = parseFloat(totalAmountElement.textContent);
-                    
-                    if (this.checked) {
-                        const discountAmount = {{ ticketPrice + snackPrice }};
-                        const newTotal = Math.max(0, currentTotal - discountAmount);
-                        paymentAmountElement.textContent = newTotal.toFixed(2);
-                    } else {
-                        paymentAmountElement.textContent = currentTotal.toFixed(2);
-                    }
-                });
-            }
+    // The server prices the order; the page only describes what was picked.
+    function buildOrder(paymentMethodId) {
+        const snacks = {};
+        Object.entries(orderDetails.snacks || {}).forEach(([id, item]) => { snacks[id] = item.quantity; });
+        return {
+            movieId: Number(orderDetails.movieId),
+            sessionId: Number(orderDetails.sessionId),
+            seats: (orderDetails.seats || []).map(seat => seat.label),
+            snacks,
+            applyRedemption: Boolean(redeemCheckbox && redeemCheckbox.checked),
+            paymentMethodId: paymentMethodId || null
+        };
+    }
+
+    async function post(url, body) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...csrf },
+            body: JSON.stringify(body)
         });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Something went wrong. Please try again.');
+        }
+        return result;
+    }
 
-        // Handle form submission
-        const form = document.getElementById('payment-form');
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const submitButton = document.getElementById('submit-button');
-            submitButton.disabled = true;
+    function line(label, amount, className = '') {
+        const row = document.createElement('div');
+        row.className = `summary-line ${className}`;
+        row.innerHTML = '<span></span><span></span>';
+        row.children[0].textContent = label;
+        row.children[1].textContent = amount;
+        return row;
+    }
 
-            try {
-                if (!stripe) {
-                    throw new Error('Card payments are not configured');
-                }
-
-                // Validate required fields
-                if (!window.orderDetails.movieId || !window.orderDetails.sessionId) {
-                    throw new Error('Missing movie or session information');
-                }
-
-                if (!window.orderDetails.seats || window.orderDetails.seats.length === 0) {
-                    throw new Error('No seats selected');
-                }
-
-                // Get redemption status
-                const redeemCheckbox = document.getElementById('redeem-points');
-                const applyRedemption = redeemCheckbox && redeemCheckbox.checked;
-
-                const { paymentMethod, error } = await stripe.createPaymentMethod({
-                    type: 'card',
-                    card: card,
-                });
-
-                if (error) {
-                    const errorElement = document.getElementById('card-errors');
-                    errorElement.textContent = error.message;
-                    submitButton.disabled = false;
-                    return;
-                }
-
-                // Prepare payment data
-                const paymentData = {
-                    paymentMethodId: paymentMethod.id,
-                    amount: parseFloat(document.getElementById('payment-amount').textContent),
-                    seats: window.orderDetails.seats,
-                    snacks: window.orderDetails.snacks,
-                    movieId: parseInt(window.orderDetails.movieId),
-                    sessionId: parseInt(window.orderDetails.sessionId),
-                    applyRedemption: applyRedemption
-                };
-
-                // Validate numeric values
-                if (isNaN(paymentData.amount) || paymentData.amount < 0) {
-                    throw new Error('Invalid amount');
-                }
-                if (isNaN(paymentData.movieId) || paymentData.movieId <= 0) {
-                    throw new Error('Invalid movie ID');
-                }
-                if (isNaN(paymentData.sessionId) || paymentData.sessionId <= 0) {
-                    throw new Error('Invalid session ID');
-                }
-
-                // Send payment request to server
-                const response = await fetch('/user/payment/process', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        [document.querySelector('meta[name="_csrf_header"]').content]: document.querySelector('meta[name="_csrf"]').content
-                    },
-                    body: JSON.stringify(paymentData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    sessionStorage.setItem('bookingSuccess', '1');
-                    window.location.href = result.redirectUrl;
-                } else {
-                    const errorElement = document.getElementById('card-errors');
-                    errorElement.textContent = result.error;
-                    submitButton.disabled = false;
-                }
-            } catch (error) {
-                const errorElement = document.getElementById('card-errors');
-                errorElement.textContent = error.message || 'An error occurred. Please try again.';
-                submitButton.disabled = false;
+    async function refreshQuote() {
+        submitButton.disabled = true;
+        errorText.textContent = '';
+        try {
+            const quote = await post('/user/payment/quote', buildOrder());
+            const lines = [line(`Tickets (${quote.seats.join(', ')})`, formatPkr(quote.ticketTotal))];
+            quote.snacks.forEach(snack => lines.push(line(`${snack.name} x ${snack.quantity}`, formatPkr(snack.amount))));
+            if (quote.discount > 0) {
+                lines.push(line('Loyalty reward', `- ${formatPkr(quote.discount)}`, 'discount'));
             }
+            lines.push(line('Total', formatPkr(quote.total), 'total'));
+            document.getElementById('summary-lines').replaceChildren(...lines);
+            document.getElementById('payment-amount').textContent = formatPkr(quote.total);
+            submitButton.disabled = false;
+        } catch (error) {
+            errorText.textContent = error.message;
+        }
+    }
+
+    document.getElementById('payment-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        errorText.textContent = '';
+        try {
+            let paymentMethodId = null;
+            if (card) {
+                const { paymentMethod, error } = await stripe.createPaymentMethod({ type: 'card', card });
+                if (error) {
+                    throw new Error(error.message);
+                }
+                paymentMethodId = paymentMethod.id;
+            }
+            const result = await post('/user/payment/process', buildOrder(paymentMethodId));
+            sessionStorage.removeItem('orderDetails');
+            window.location.href = result.redirectUrl;
+        } catch (error) {
+            errorText.textContent = error.message;
+            submitButton.disabled = false;
+        }
     });
+
+    if (!orderDetails.sessionId || !(orderDetails.seats || []).length) {
+        document.getElementById('summary-lines').innerHTML =
+            '<p class="muted">Your order is empty. <a href="/movies">Pick a movie and seats</a> to continue.</p>';
+    } else {
+        document.getElementById('movie-title').textContent = orderDetails.movieTitle || '';
+        document.getElementById('session-time').textContent = orderDetails.sessionTime || '';
+        if (redeemCheckbox) {
+            redeemCheckbox.addEventListener('change', refreshQuote);
+        }
+        refreshQuote();
+    }
 </script>
 </body>
 </html>
