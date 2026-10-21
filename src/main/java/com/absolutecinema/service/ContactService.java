@@ -7,14 +7,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 @Service
 public class ContactService {
 
     public static final Set<String> SUBJECTS = Set.of("General Inquiry", "Booking Issues", "Movie Suggestions",
             "Corporate Events", "Facilities", "Lost & Found");
-    private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
 
     private final ContactMessageRepository repository;
 
@@ -27,7 +25,7 @@ public class ContactService {
         ContactMessage contact = new ContactMessage();
         contact.setName(require(name, "Your name", 100));
         String address = require(email, "Email", 254);
-        if (!EMAIL.matcher(address).matches()) {
+        if (!UserService.isValidEmail(address)) {
             throw new IllegalArgumentException("Please enter a valid email address");
         }
         contact.setEmail(address);

@@ -62,6 +62,19 @@ class UserServiceTest {
     }
 
     @Test
+    void emailValidationIsStrictAndFastOnHostileInput() {
+        assertThat(UserService.isValidEmail("dana@mail.example.com")).isTrue();
+        assertThat(UserService.isValidEmail("dana@localhost")).isFalse();
+        assertThat(UserService.isValidEmail("dana@example..com")).isFalse();
+        assertThat(UserService.isValidEmail("a@" + "b".repeat(260) + ".com")).isFalse();
+
+        String hostile = "!@!." + "!.".repeat(5000);
+        long start = System.nanoTime();
+        assertThat(UserService.isValidEmail(hostile)).isFalse();
+        assertThat(System.nanoTime() - start).isLessThan(1_000_000_000L);
+    }
+
+    @Test
     void changePasswordRequiresTheCurrentPassword() {
         User user = new User();
         user.setPassword(encoder.encode("old-password"));

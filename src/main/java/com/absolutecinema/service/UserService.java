@@ -14,7 +14,9 @@ public class UserService {
 
     public static final int MIN_PASSWORD_LENGTH = 8;
     private static final Pattern USERNAME = Pattern.compile("[A-Za-z0-9_.]{3,30}");
-    private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
+    // Domain labels cannot contain dots, so the pattern cannot backtrack heavily on long input
+    private static final Pattern EMAIL = Pattern.compile("[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+");
+    private static final int MAX_EMAIL_LENGTH = 254;
     private static final int MAX_NAME_LENGTH = 50;
 
     private final UserRepository userRepository;
@@ -81,7 +83,7 @@ public class UserService {
 
     private void applyProfile(User user, String firstName, String lastName, String email) {
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
-        if (!EMAIL.matcher(normalizedEmail).matches()) {
+        if (!isValidEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Please enter a valid email address");
         }
         boolean takenByOther = userRepository.findByEmailIgnoreCase(normalizedEmail).stream()
@@ -92,6 +94,10 @@ public class UserService {
         user.setFirstName(requireName(firstName, "First name"));
         user.setLastName(requireName(lastName, "Last name"));
         user.setEmail(normalizedEmail);
+    }
+
+    public static boolean isValidEmail(String email) {
+        return email != null && email.length() <= MAX_EMAIL_LENGTH && EMAIL.matcher(email).matches();
     }
 
     private static String requireName(String value, String field) {
