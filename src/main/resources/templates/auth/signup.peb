@@ -307,42 +307,42 @@
             <div class="logo">ABSOLUTE CINEMA</div>
             <br>
             {% if error %}
-                <div class="error-message" style="color: red;">{{ error }}</div>
+                <div class="error-message" style="color: #ff6b6b;" role="alert">{{ error }}</div>
             {% endif %}
             <div class="form-group">
-                <input type="text" name="username" id="username" class="form-control" placeholder="Username">
+                <input type="text" name="username" id="username" class="form-control" placeholder="Username" value="{{ form.username }}" pattern="[A-Za-z0-9_.]{3,30}" title="3-30 letters, numbers, dots or underscores" autocomplete="username" required>
                 <i class="fas fa-user form-icon"></i>
             </div>
             
             <div class="form-group">
-                <input type="text" name="firstName" id="firstName" class="form-control" placeholder="First Name">
+                <input type="text" name="firstName" id="firstName" class="form-control" placeholder="First Name" value="{{ form.firstName }}" maxlength="50" autocomplete="given-name" required>
                 <i class="fas fa-user form-icon"></i>
             </div>
             
             <div class="form-group">
-                <input type="text" name="lastName" id="lastName" class="form-control" placeholder="Last Name">
+                <input type="text" name="lastName" id="lastName" class="form-control" placeholder="Last Name" value="{{ form.lastName }}" maxlength="50" autocomplete="family-name" required>
                 <i class="fas fa-user form-icon"></i>
             </div>
             
             <div class="form-group">
-                <input type="email" name="email" id="email" class="form-control" placeholder="Email">
+                <input type="email" name="email" id="email" class="form-control" placeholder="Email" value="{{ form.email }}" autocomplete="email" required>
                 <i class="fas fa-envelope form-icon"></i>
             </div>
             
             <div class="form-group">
-                <input type="password" name="password" id="password" class="form-control" placeholder="Enter Password">
+                <input type="password" name="password" id="password" class="form-control" placeholder="Password (8+ characters)" minlength="8" autocomplete="new-password" required>
                 <i class="fas fa-lock form-icon"></i>
             </div>
             
             <div class="form-group">
-                <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm Password">
+                <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm Password" autocomplete="new-password" required>
                 <i class="fas fa-lock form-icon"></i>
             </div>
             
             <button type="submit" class="btn btn-primary" id="submitBtn" style="position: absolute;top: 560px;left:100px;width: 300px;height: 40px;padding: 10px;">SIGN UP</button>
             
             <div class="signup-link" style="position: absolute;top: 590px;left:120px;">
-                Already have an account? <a href="login">Sign In</a>
+                Already have an account? <a href="/auth/login">Sign In</a>
             </div>
         </div>
     </div>
@@ -352,27 +352,11 @@
         // Get form inputs
         const passwordField = document.getElementById('password');
         const confirmPasswordField = document.getElementById('confirmPassword');
-        const emailField = document.getElementById('email');
-        const submitBtn = document.getElementById('submitBtn');
         
-        // Function to validate form
-        submitBtn.addEventListener('click', function(e) {
-            // Check if email contains '@'
-            if (!emailField.value.includes('@')) {
-                alert('Please enter a valid email address.');
-                e.preventDefault();
-                return;
-            }
-
-            // Check if passwords match
-            if (passwordField.value !== confirmPasswordField.value) {
-                alert('Passwords do not match!');
-                e.preventDefault();
-                return;
-            }
-
-            // Optional: You can add more validation here if needed (e.g., password strength check)
-            // alert('Form Submitted Successfully!');
+        // The browser checks required fields and formats; the server re-validates everything.
+        confirmPasswordField.addEventListener('input', () => {
+            confirmPasswordField.setCustomValidity(
+                confirmPasswordField.value === passwordField.value ? '' : 'Passwords do not match');
         });
     </script>
 </body>
