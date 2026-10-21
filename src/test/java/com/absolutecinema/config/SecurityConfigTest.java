@@ -1,6 +1,8 @@
 package com.absolutecinema.config;
 
+import com.absolutecinema.controller.AccountController;
 import com.absolutecinema.controller.AdminController;
+import com.absolutecinema.controller.AuthController;
 import com.absolutecinema.controller.BookingController;
 import com.absolutecinema.controller.LoginSuccessHandler;
 import com.absolutecinema.controller.SnackAPIController;
@@ -8,8 +10,10 @@ import com.absolutecinema.entity.Snack;
 import com.absolutecinema.repository.UserRepository;
 import com.absolutecinema.service.AnalyticsService;
 import com.absolutecinema.service.BookingService;
+import com.absolutecinema.service.ContactService;
 import com.absolutecinema.service.LoyaltyService;
 import com.absolutecinema.service.MovieService;
+import com.absolutecinema.service.PasswordResetService;
 import com.absolutecinema.service.SnackService;
 import com.absolutecinema.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -30,10 +34,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = { AdminController.class, BookingController.class, SnackAPIController.class })
+@WebMvcTest(controllers = { AdminController.class, BookingController.class, SnackAPIController.class,
+        AuthController.class, AccountController.class })
 @Import({ SecurityConfig.class, LoginSuccessHandler.class })
 class SecurityConfigTest {
 
@@ -54,6 +60,10 @@ class SecurityConfigTest {
     private LoyaltyService loyaltyService;
     @MockitoBean
     private AnalyticsService analyticsService;
+    @MockitoBean
+    private ContactService contactService;
+    @MockitoBean
+    private PasswordResetService passwordResetService;
 
     @Test
     void accountTypesMapToRoles() {
@@ -107,6 +117,39 @@ class SecurityConfigTest {
     @Test
     void stateChangingRequestsRequireCsrfToken() throws Exception {
         mockMvc.perform(delete("/api/snacks/1").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void passwordResetIsAvailableWithoutSigningIn() throws Exception {
+        mockMvc.perform(post("/auth/forgot-password/code").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"demo@example.com\"}"))
+                .andExpect(status().isOk());
+        verify(passwordResetService).requestCode("demo@example.com");
+    }
+
+    @Test
+    void accountSettingsRequireSigningIn() throws Exception {
+        mockMvc.perform(get("/account/settings"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/auth/login"));
+    }
+
+    @Test
+    void onlyAdminsCanReadOrDeleteContactMessages() throws Exception {
+        mockMvc.perform(get("/admin/messages").with(user("demo").roles("USER")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/admin/messages/3").with(user("demo").roles("USER")).with(csrf()))
+                .andExpect(status().isForbidden());
+
+        when(contactService.delete(3L)).thenReturn(true);
+        mockMvc.perform(delete("/admin/messages/3").with(user("admin").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void employeesCannotOpenAdminPages() throws Exception {
+        mockMvc.perform(get("/admin/analytics").with(user("staff").roles("EMPLOYEE")))
                 .andExpect(status().isForbidden());
     }
 }

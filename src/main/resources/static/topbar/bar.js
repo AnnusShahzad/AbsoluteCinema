@@ -29,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Search and Filter
+// Search: Enter searches titles; the dropdown links filter by genre
 const searchInput = document.getElementById('searchInput');
 const dropdown = document.getElementById('filterDropdown');
 
@@ -39,6 +39,13 @@ if (searchInput && dropdown) {
         dropdown.style.display = 'block';
     });
 
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            window.location.href = '/movies/search?query=' + encodeURIComponent(searchInput.value.trim());
+        }
+    });
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
         if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
@@ -46,28 +53,3 @@ if (searchInput && dropdown) {
         }
     });
 }
-
-function toggleFilterSection(sectionId) {
-    const options = document.getElementById(sectionId + 'Options');
-    const icon = event.currentTarget.querySelector('i');
-
-    if (options.classList.contains('show')) {
-        options.classList.remove('show');
-        icon.classList.remove('bi-chevron-up');
-        icon.classList.add('bi-chevron-down');
-    } else {
-        options.classList.add('show');
-        icon.classList.remove('bi-chevron-down');
-        icon.classList.add('bi-chevron-up');
-    }
-    event.stopPropagation(); // Prevent event from bubbling up
-}
-
-document.querySelectorAll('.filter-option').forEach(option => {
-    option.addEventListener('click', function(event) {
-        event.stopPropagation(); // Prevent event from bubbling up
-        this.classList.toggle('selected');
-        // Here you can add logic to handle the selected filter
-        console.log('Selected filter:', this.textContent);
-    });
-});
