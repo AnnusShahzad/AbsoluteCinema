@@ -136,33 +136,18 @@
             <h1 class="logo-text m-0">Absolute Cinema</h1>
             <div class="search-container">
                 <i class="bi bi-search search-icon"></i>
-                <input id="searchInput" type="search" class="form-control" placeholder="Search movies..." aria-label="Search" autocomplete="off">
+                <input id="searchInput" type="search" class="form-control" placeholder="Search movies..." aria-label="Search movies" autocomplete="off">
                 <div id="filterDropdown" class="filter-dropdown dropdown-menu shadow" style="display: none;">
                     <div class="filter-section">
-                        <div class="filter-section-title" onclick="toggleFilterSection('genre')">
-                            Genre <i class="bi bi-chevron-down"></i>
-                        </div>
-                        <div id="genreOptions" class="filter-options">
-                            <div class="filter-option" style="font-weight: 500; border-bottom: 1px solid #eee; margin-bottom: 8px;">All Movies</div>
-                            <div class="filter-option">Action</div>
-                            <div class="filter-option">Adventure</div>
-                            <div class="filter-option">Animation</div>
-                            <div class="filter-option">Comedy</div>
-                            <div class="filter-option">Crime</div>
-                            <div class="filter-option">Documentary</div>
-                            <div class="filter-option">Drama</div>
-                            <div class="filter-option">Family</div>
-                            <div class="filter-option">Fantasy</div>
-                            <div class="filter-option">History</div>
-                            <div class="filter-option">Horror</div>
-                            <div class="filter-option">Music</div>
-                            <div class="filter-option">Mystery</div>
-                            <div class="filter-option">Romance</div>
-                            <div class="filter-option">Science Fiction</div>
-                            <div class="filter-option">Thriller</div>
-                            <div class="filter-option">War</div>
-                            <div class="filter-option">Western</div>
-                        </div>
+                        <div class="filter-section-title">Browse by genre</div>
+                        <a class="filter-option" href="/movies/search?genre=Action">Action</a>
+                        <a class="filter-option" href="/movies/search?genre=Animation">Animation</a>
+                        <a class="filter-option" href="/movies/search?genre=Comedy">Comedy</a>
+                        <a class="filter-option" href="/movies/search?genre=Drama">Drama</a>
+                        <a class="filter-option" href="/movies/search?genre=Horror">Horror</a>
+                        <a class="filter-option" href="/movies/search?genre=Romance">Romance</a>
+                        <a class="filter-option" href="/movies/search?genre=Sci-Fi">Sci-Fi</a>
+                        <a class="filter-option" href="/movies/search?genre=Thriller">Thriller</a>
                     </div>
                 </div>
             </div>
@@ -172,130 +157,44 @@
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
                 <li><a href="/user/dashboard" class="nav-link px-2">Home</a></li>
                 <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-                <li><a href="/bookings/history" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
+                <li><a href="/bookings/history" class="nav-link px-2">My Bookings</a></li>
+                <li><a href="/loyalty" class="nav-link px-2">Loyalty</a></li>
                 <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
                 <li><a href="/contact" class="nav-link px-2">Contact</a></li>
-            </ul>
+                <li><a href="/account/settings" class="nav-link px-2">Settings</a></li>
+                <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+              </ul>
         </div>
     </div>
 </div>
 
 <div class="container mt-4">
+    {% if currentQuery is not empty or currentGenre is not empty %}
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <h2 class="h5 m-0">
+            {{ movies | length }} result{% if movies | length != 1 %}s{% endif %}
+            {% if currentQuery is not empty %} for "{{ currentQuery }}"{% endif %}
+            {% if currentGenre is not empty %} in {{ currentGenre }}{% endif %}
+        </h2>
+        <a href="/movies" class="small">Clear search</a>
+    </div>
+    {% endif %}
     <div class="grid-container">
         {% for movie in movies %}
         <div class="movie-card" onclick="window.location.href='/movies/{{ movie.id }}'">
          <img src="{{ movie.posterUrl | default('/images/movies/default.svg') }}" onerror="this.onerror=null; this.src='/images/movies/default.svg'" alt="{{ movie.title }}" class="movie-poster">
             <div class="movie-title">{{ movie.title }}</div>
         </div>
+        {% else %}
+        <p class="text-muted">No movies match your search.</p>
         {% endfor %}
     </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="/topbar/bar.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const filterDropdown = document.getElementById('filterDropdown');
-            let searchTimeout;
-            let dropdownTimeout;
-            
-            // Set current values from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentQuery = urlParams.get('query') || '';
-            const currentGenre = urlParams.get('genre') || '';
-            
-            searchInput.value = currentQuery;
-            
-            // Show/hide filter dropdown on search icon click
-            document.querySelector('.search-icon').addEventListener('click', function(e) {
-                e.stopPropagation();
-                clearTimeout(dropdownTimeout);
-                filterDropdown.style.display = filterDropdown.style.display === 'none' ? 'block' : 'none';
-            });
-            
-            // Keep dropdown open when hovering over it
-            filterDropdown.addEventListener('mouseenter', function() {
-                clearTimeout(dropdownTimeout);
-            });
-            
-            filterDropdown.addEventListener('mouseleave', function() {
-                dropdownTimeout = setTimeout(() => {
-                    filterDropdown.style.display = 'none';
-                }, 500); // Close after 500ms of mouse leaving
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!filterDropdown.contains(e.target) && !e.target.classList.contains('search-icon')) {
-                    filterDropdown.style.display = 'none';
-                }
-            });
-            
-            // Handle filter option clicks
-            document.querySelectorAll('.filter-option').forEach(option => {
-                option.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    let newUrl = '/movies/search';
-                    const params = new URLSearchParams();
-                    
-                    // Get current search query
-                    const query = searchInput.value.trim();
-                    if (query) {
-                        params.append('query', query);
-                    }
-                    
-                    // Add genre filter only if it's not "All Movies"
-                    if (this.textContent !== 'All Movies') {
-                        params.append('genre', this.textContent);
-                    }
-                    
-                    const queryString = params.toString();
-                    if (queryString) {
-                        newUrl += '?' + queryString;
-                    }
-                    
-                    window.location.href = newUrl;
-                });
-            });
-            
-            // Handle search input
-            searchInput.addEventListener('input', function(e) {
-                clearTimeout(searchTimeout);
-                const query = e.target.value.trim();
-                
-                searchTimeout = setTimeout(() => {
-                    let newUrl = '/movies/search';
-                    const params = new URLSearchParams();
-                    
-                    if (query) {
-                        params.append('query', query);
-                    }
-                    
-                    // Preserve current genre filter
-                    if (currentGenre) params.append('genre', currentGenre);
-                    
-                    const queryString = params.toString();
-                    if (queryString) {
-                        newUrl += '?' + queryString;
-                    }
-                    
-                    window.location.href = newUrl;
-                }, 500);
-            });
-            
-            // Toggle filter sections
-            window.toggleFilterSection = function(sectionId) {
-                const options = document.getElementById(sectionId + 'Options');
-                options.style.display = options.style.display === 'none' ? 'block' : 'none';
-            };
-            
-            // Initialize filter sections
-            document.querySelectorAll('.filter-options').forEach(options => {
-                options.style.display = 'none';
-            });
-        });
-    </script>
+<script src="/topbar/bar.js"></script>
+<script>
+    // Keep the search box showing the current query
+    document.getElementById('searchInput').value = new URLSearchParams(window.location.search).get('query') || '';
+</script>
 </body>
 
 </html>

@@ -21,6 +21,15 @@ public class MovieService {
         return movieRepository.findAll(Sort.by(Sort.Direction.DESC, "ticketssold"));
     }
 
+    /** Title search, optionally narrowed to one genre; blank criteria match everything. */
+    public List<Movie> search(String query, String genre) {
+        String title = query == null ? "" : query.trim();
+        if (genre != null && !genre.isBlank()) {
+            return movieRepository.findByTitleContainingIgnoreCaseAndGenreIgnoreCase(title, genre.trim());
+        }
+        return title.isEmpty() ? getMoviesByPopularity() : movieRepository.findByTitleContainingIgnoreCase(title);
+    }
+
     public List<Movie> getAllMovies() {
         return movieRepository.findAll();
     }

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox - Absolute Cinema Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/managebooking.css">
+    <link rel="stylesheet" href="/topbar/bar.css">
+    <meta name="_csrf" content="{{ _csrf.token }}">
+    <meta name="_csrf_header" content="{{ _csrf.headerName }}">
+</head>
+<body>
+<!-- Theme Toggle -->
+<div class="theme-toggle">
+    <div class="dropdown">
+        <button class="theme-btn" type="button" id="themeToggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-moon-stars-fill"></i>
+        </button>
+        <ul class="dropdown-menu theme-menu" aria-labelledby="themeToggle">
+            <li><button class="dropdown-item theme-item" data-bs-theme-value="light"><i class="bi bi-sun-fill"></i>Light</button></li>
+            <li><button class="dropdown-item theme-item active" data-bs-theme-value="dark"><i class="bi bi-moon-stars-fill"></i>Dark</button></li>
+            <li><button class="dropdown-item theme-item" data-bs-theme-value="auto"><i class="bi bi-circle-half"></i>Auto</button></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav-container">
+    <div class="container py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="logo-text m-0">Absolute Cinema</h1>
+            <div class="search-container">
+                <i class="bi bi-search search-icon"></i>
+                <input id="searchInput" type="search" class="form-control" placeholder="Search movies..." aria-label="Search movies" autocomplete="off">
+                <div id="filterDropdown" class="filter-dropdown dropdown-menu shadow" style="display: none;">
+                    <div class="filter-section">
+                        <div class="filter-section-title">Browse by genre</div>
+                        <a class="filter-option" href="/movies/search?genre=Action">Action</a>
+                        <a class="filter-option" href="/movies/search?genre=Animation">Animation</a>
+                        <a class="filter-option" href="/movies/search?genre=Comedy">Comedy</a>
+                        <a class="filter-option" href="/movies/search?genre=Drama">Drama</a>
+                        <a class="filter-option" href="/movies/search?genre=Horror">Horror</a>
+                        <a class="filter-option" href="/movies/search?genre=Romance">Romance</a>
+                        <a class="filter-option" href="/movies/search?genre=Sci-Fi">Sci-Fi</a>
+                        <a class="filter-option" href="/movies/search?genre=Thriller">Thriller</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center mt-3">
+            <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
+                <li><a href="/admin/dashboard" class="nav-link px-2">Dashboard</a></li>
+                <li><a href="/admin/analytics" class="nav-link px-2">Analytics</a></li>
+                <li><a href="/admin/manageproduct" class="nav-link px-2">Movies &amp; Snacks</a></li>
+                <li><a href="/admin/managebooking" class="nav-link px-2">Bookings</a></li>
+                <li><a href="/admin/manageloyalty" class="nav-link px-2">Loyalty</a></li>
+                <li><a href="/admin/managefeedback" class="nav-link px-2">Feedback</a></li>
+                <li><a href="/admin/messages" class="nav-link px-2">Inbox</a></li>
+                <li><a href="/account/settings" class="nav-link px-2">Settings</a></li>
+                <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    <!-- Management Section -->
+    <div class="management-container">
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="messages">Inbox ({{ messages | length }})</button>
+      </div>
+
+      <div class="tab-content">
+        <div class="tab-panel active" id="messages-panel">
+          <div class="top-actions">
+            <div class="search-bar">
+              <input type="text" placeholder="Search messages...">
+              <button type="button"><i class="fas fa-search"></i></button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Received</th>
+                  <th>From</th>
+                  <th>Subject</th>
+                  <th>Message</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for message in messages %}
+                <tr data-row>
+                  <td>{{ message.createdAt | date("dd MMM yyyy, HH:mm") }}</td>
+                  <td>
+                    <div>{{ message.name }}</div>
+                    <small><a href="mailto:{{ message.email }}">{{ message.email }}</a>{% if message.phone is not null %} • {{ message.phone }}{% endif %}</small>
+                  </td>
+                  <td>{{ message.subject }}</td>
+                  <td style="white-space: pre-line; max-width: 420px;">{{ message.message }}</td>
+                  <td>
+                    <button type="button" class="action-btn delete-btn" title="Delete message"
+                            data-delete-url="/admin/messages/{{ message.id }}" data-label="the message from {{ message.name }}">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center">No messages yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/topbar/bar.js"></script>
+<script src="/admin/admin.js"></script>
+</body>
+</html>

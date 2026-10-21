@@ -7,8 +7,6 @@ import java.time.LocalDateTime;
 @Table(name = "sessions")
 public class Session {
 
-    private static final int TOTAL_SEATS = 100;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -47,10 +45,6 @@ public class Session {
 
     public void setSessionTime(LocalDateTime sessionTime) {
         this.sessionTime = sessionTime;
-    }
-
-    public int getTotalSeats() {
-        return TOTAL_SEATS;
     }
 
     public int getAvailableSeats() {

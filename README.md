@@ -3,6 +3,8 @@
 **A full-stack cinema management platform: ticket booking, seat selection, snacks, Stripe payments, loyalty rewards, and admin analytics.**
 
 [![CI](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/ci.yml/badge.svg)](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/codeql.yml/badge.svg)](https://github.com/AnnusShahzad/AbsoluteCinema/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/AnnusShahzad/AbsoluteCinema)](https://github.com/AnnusShahzad/AbsoluteCinema/releases/latest)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?logo=springboot&logoColor=white)
 ![Spring Security](https://img.shields.io/badge/Spring%20Security-6-6DB33F?logo=springsecurity&logoColor=white)
@@ -10,8 +12,11 @@
 ![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 <img src="docs/banner.png" alt="Absolute Cinema" width="900">
+
+[Quick start](#getting-started) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -25,31 +30,42 @@ It was built by a team of six, using GitHub issues for planning and pull request
 
 | Area | What it does |
 | --- | --- |
-| **Authentication & roles** | Spring Security form login with BCrypt. Accounts map to `ROLE_USER`, `ROLE_EMPLOYEE` or `ROLE_ADMIN`; admin pages, staff pages and catalog writes are restricted per role, and every state-changing request is CSRF-protected. |
-| **Streaming-style home** | Featured hero, "Trending Now" poster row and a Top 3 ranking, all driven by live ticket sales. |
-| **Booking flow** | Movie → showtime → interactive seat map → snacks → Stripe payment. Successful payments record the booking, update stock and sales counters, and award loyalty points. |
-| **Loyalty program** | 50 points per ticket, 20 per snack, Bronze/Silver/Gold tiers, and 250 points redeemable for a free ticket and snack. |
-| **Admin console** | Dashboard, sales analytics (monthly ticket vs. snack revenue, genre breakdown, best sellers), movie and snack management with add/edit/delete, booking cancellation, loyalty members, and customer feedback trends. |
+| **Booking flow** | Movie → showtime → interactive seat map → snacks → checkout → confirmation. Prices, seat availability and snack stock are decided on the server, and a seat can only be sold once per showtime, even under concurrent checkouts. |
+| **Payments** | Stripe card payments. Without Stripe keys the app runs in demo mode and confirms bookings without charging, so the whole flow can be tried locally. |
+| **Loyalty program** | 50 points per ticket, 20 per snack, Bronze/Silver/Gold tiers, and 250 points redeemable for a free ticket at checkout. |
+| **Streaming-style home** | Featured hero, "Trending Now" poster row and a Top 3 ranking driven by live ticket sales, plus title and genre search. |
+| **Accounts** | Registration with validation, role-based home pages, self-service password reset with 6-digit codes, and profile/password settings for every role. |
+| **Admin console** | Dashboard, sales analytics (monthly ticket vs. snack revenue, genre breakdown, best sellers), movie and snack management, booking management with seats, loyalty members, feedback trends and a contact inbox. |
 | **Employee portal** | This month's shifts and salary for the signed-in staff member. |
-| **REST API** | JSON endpoints under `/api/{movies,sessions,snacks,feedback}` power the dynamic UI. |
+| **Security** | Spring Security with BCrypt, `ROLE_USER` / `ROLE_EMPLOYEE` / `ROLE_ADMIN` route rules, CSRF protection on every state-changing request, and no password hashes in API responses. |
 
 ## Screenshots
 
 <img src="docs/screenshots/user-dashboard-full.png" alt="Customer home page" width="100%">
 
-| Movie catalog | Movie details |
+**Booking flow**
+
+| Seat selection | Snacks |
 | --- | --- |
-| ![Movie catalog](docs/screenshots/movies.png) | ![Movie details](docs/screenshots/movie-details.png) |
-| **Seat selection** | **Snacks** |
 | ![Seat selection](docs/screenshots/seat-selection.png) | ![Snack selection](docs/screenshots/snacks.png) |
-| **Sales analytics** | **Admin dashboard** |
+| **Checkout** | **Confirmation** |
+| ![Checkout](docs/screenshots/checkout.png) | ![Booking confirmation](docs/screenshots/confirmation.png) |
+| **Movie catalog** | **Movie details** |
+| ![Movie catalog](docs/screenshots/movies.png) | ![Movie details](docs/screenshots/movie-details.png) |
+
+**Admin console and staff**
+
+| Sales analytics | Admin dashboard |
+| --- | --- |
 | ![Sales analytics](docs/screenshots/admin-analytics.png) | ![Admin dashboard](docs/screenshots/admin-dashboard.png) |
 | **Movie & snack management** | **Booking management** |
 | ![Catalog management](docs/screenshots/admin-catalog.png) | ![Booking management](docs/screenshots/admin-bookings.png) |
 | **Loyalty members** | **Feedback analytics** |
 | ![Loyalty members](docs/screenshots/admin-loyalty.png) | ![Feedback analytics](docs/screenshots/admin-feedback.png) |
-| **Sign in** | **Employee portal** |
-| ![Sign in](docs/screenshots/login.png) | ![Employee dashboard](docs/screenshots/employee-dashboard.png) |
+| **Contact inbox** | **Employee portal** |
+| ![Contact inbox](docs/screenshots/admin-inbox.png) | ![Employee dashboard](docs/screenshots/employee-dashboard.png) |
+| **Sign in** | **Account settings** |
+| ![Sign in](docs/screenshots/login.png) | ![Account settings](docs/screenshots/account-settings.png) |
 
 ## Tech stack
 
@@ -68,7 +84,7 @@ flowchart LR
     subgraph App["Spring Boot application"]
         Sec["Spring Security<br/>form login, BCrypt, role redirect"]
         MVC["Controllers<br/>page + /api REST"]
-        Svc["Services<br/>booking, payment, loyalty, analytics"]
+        Svc["Services<br/>checkout, seats, loyalty, analytics, accounts"]
         Repo["Spring Data JPA repositories"]
     end
     DB[("PostgreSQL")]
@@ -82,14 +98,15 @@ The code follows a standard layered layout:
 
 ```
 src/main/java/com/absolutecinema/
-├── config/        # Security, persistence, and MVC configuration
-├── controller/    # Page controllers and /api REST controllers
-├── service/       # Business logic (bookings, payments, loyalty, analytics, payroll)
+├── config/        # Security rules and error handling
+├── controller/    # Page controllers and /api REST controllers (kept thin)
+├── service/       # Business rules: checkout & pricing, seat layout, loyalty, analytics, accounts, password reset
 ├── repository/    # Spring Data JPA repositories
-└── entity/        # JPA entities: Movie, Session, Booking, Snack, User, Employee, Shift, Salary...
+└── entity/        # JPA entities: Movie, Session, Booking, Snack, User, Employee, Shift, ContactMessage...
 src/main/resources/
-├── templates/     # Pebble views per area (auth, user, admin, employee, movies...)
-└── static/        # CSS and JavaScript
+├── templates/     # Pebble views per area (auth, user, admin, employee, movies, account...)
+└── static/        # CSS, JavaScript and images
+scripts/demo-data.sql   # Demo movies, showtimes, bookings and accounts
 ```
 
 ## Getting started
@@ -118,9 +135,22 @@ Open <http://localhost:8080> and sign in with one of these accounts (password `d
 | `employee` | Employee |
 | `admin` | Administrator |
 
-To try card payments, export your [Stripe test keys](https://dashboard.stripe.com/test/apikeys) as `STRIPE_PUBLIC_KEY` and `STRIPE_SECRET_KEY` before running `docker compose up`.
+Notes for local runs:
 
-### Option 2: Run locally
+- **Payments:** without Stripe keys checkout runs in demo mode. To try real test cards, export your [Stripe test keys](https://dashboard.stripe.com/test/apikeys) as `STRIPE_PUBLIC_KEY` and `STRIPE_SECRET_KEY` before `docker compose up`.
+- **Password reset:** there is no mail server, so reset codes are written to the log: `docker compose logs app | grep "reset code"`.
+
+### Option 2: Run the published image
+
+Every release publishes a container image to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/annusshahzad/absolutecinema:latest
+```
+
+Run it with `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` pointing at a PostgreSQL database.
+
+### Option 3: Run locally
 
 Requires JDK 17+ and a PostgreSQL instance.
 
@@ -135,7 +165,15 @@ cp .env.example .env      # then edit the database URL, credentials, and Stripe 
 ./gradlew test
 ```
 
-Unit tests cover the analytics calculations (revenue split, monthly buckets, rankings), loyalty tiers and points, booking cancellation and snack updates. Web-layer tests check the security rules: anonymous users are sent to sign in, customers cannot reach admin pages or change the catalog, and requests without a CSRF token are rejected. CI runs the tests and builds the Docker image on every push.
+The suite covers the business rules where bugs would hurt most: checkout pricing, seat validation and double-booking protection, loyalty redemption, analytics calculations, account and password-reset rules, contact and feedback validation. MockMvc tests pin down the security rules: anonymous users are sent to sign in, customers and staff cannot reach admin pages or change the catalog, and requests without a CSRF token are rejected. CI runs the tests and builds the Docker image on every push and pull request, and CodeQL scans the code weekly.
+
+## Releases
+
+Releases follow [Semantic Versioning](https://semver.org/) and are listed in the [changelog](CHANGELOG.md). Pushing a tag such as `v1.1.0` runs the [release workflow](.github/workflows/release.yml), which tests the code, publishes the Docker image and creates a GitHub release with the jar attached.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, project layout and guidelines, and please follow the [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Team
 

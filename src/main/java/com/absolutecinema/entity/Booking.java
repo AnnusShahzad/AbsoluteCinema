@@ -28,6 +28,10 @@ public class Booking {
     @Column(name = "total_price", nullable = false)
     private Double totalPrice;
 
+    /** Comma-separated seat labels, e.g. "C7,C8". */
+    @Column(name = "seats", length = 500)
+    private String seats;
+
     @Column(name = "booking_time", nullable = false)
     private LocalDateTime bookingTime;
 

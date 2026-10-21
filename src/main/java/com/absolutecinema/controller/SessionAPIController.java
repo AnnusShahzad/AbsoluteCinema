@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/sessions")
@@ -52,6 +53,11 @@ public class SessionAPIController {
         }
         sessionService.deleteById(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/occupied-seats")
+    public Set<String> getOccupiedSeats(@PathVariable Long id) {
+        return sessionService.getOccupiedSeats(id);
     }
 
     @GetMapping("/movie/{movieId}")

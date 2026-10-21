@@ -1,157 +1,83 @@
 package com.absolutecinema.controller;
 
+import com.absolutecinema.entity.Booking;
 import com.absolutecinema.entity.User;
+import com.absolutecinema.service.BookingService;
+import com.absolutecinema.service.LoyaltyService;
 import com.absolutecinema.service.PaymentService;
 import com.absolutecinema.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Controller
 @RequestMapping("/user/payment")
 public class PaymentController {
-    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
-    private static final double TICKET_PRICE = 12.0;
-    private static final double SNACK_PRICE = 5.0;
 
     private final PaymentService paymentService;
+    private final BookingService bookingService;
     private final UserService userService;
+    private final String stripePublicKey;
 
-    @Value("${stripe.public.key}")
-    private String stripePublicKey;
-
-    @Autowired
-    public PaymentController(PaymentService paymentService, UserService userService) {
+    public PaymentController(PaymentService paymentService, BookingService bookingService, UserService userService,
+            @Value("${stripe.public.key:}") String stripePublicKey) {
         this.paymentService = paymentService;
+        this.bookingService = bookingService;
         this.userService = userService;
+        this.stripePublicKey = stripePublicKey;
     }
 
     @GetMapping
-    public String getPaymentPage(Model model) {
-        // Get authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByUsername(auth.getName());
-
+    public String paymentPage(Authentication auth, Model model) {
+        model.addAttribute("user", userService.findByUsername(auth.getName()));
         model.addAttribute("stripePublicKey", stripePublicKey);
-        model.addAttribute("user", user);
-        model.addAttribute("ticketPrice", TICKET_PRICE);
-        model.addAttribute("snackPrice", SNACK_PRICE);
-
+        model.addAttribute("demoMode", paymentService.isDemoMode());
+        model.addAttribute("redemptionCost", LoyaltyService.REDEMPTION_COST);
         return "user/payment";
+    }
+
+    @PostMapping("/quote")
+    @ResponseBody
+    public PaymentService.Quote quote(Authentication auth, @RequestBody PaymentService.OrderRequest order) {
+        return paymentService.quote(userService.findByUsername(auth.getName()), order);
     }
 
     @PostMapping("/process")
     @ResponseBody
-    public Map<String, Object> processPayment(@RequestBody Map<String, Object> paymentRequest) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            // Get authenticated user
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                throw new RuntimeException("User not authenticated");
-            }
-
-            User user = userService.findByUsername(auth.getName());
-            if (user == null) {
-                throw new RuntimeException("User not found");
-            }
-
-            // Validate required fields
-            if (!paymentRequest.containsKey("paymentMethodId") ||
-                    !paymentRequest.containsKey("amount") ||
-                    !paymentRequest.containsKey("movieId") ||
-                    !paymentRequest.containsKey("sessionId")) {
-                throw new IllegalArgumentException("Missing required payment information");
-            }
-
-            // Extract and validate payment details
-            String paymentMethodId = (String) paymentRequest.get("paymentMethodId");
-
-            // Validate amount
-            Object amountObj = paymentRequest.get("amount");
-            if (amountObj == null || amountObj.toString().trim().isEmpty()) {
-                throw new IllegalArgumentException("Amount cannot be empty");
-            }
-            Double amount;
-            try {
-                amount = Double.parseDouble(amountObj.toString());
-                if (amount < 0) {
-                    throw new IllegalArgumentException("Amount cannot be negative");
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid amount format");
-            }
-
-            // Validate movieId
-            Object movieIdObj = paymentRequest.get("movieId");
-            if (movieIdObj == null || movieIdObj.toString().trim().isEmpty()) {
-                throw new IllegalArgumentException("Movie ID cannot be empty");
-            }
-            Long movieId;
-            try {
-                movieId = Long.parseLong(movieIdObj.toString());
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid movie ID format");
-            }
-
-            // Validate sessionId
-            Object sessionIdObj = paymentRequest.get("sessionId");
-            if (sessionIdObj == null || sessionIdObj.toString().trim().isEmpty()) {
-                throw new IllegalArgumentException("Session ID cannot be empty");
-            }
-            Long sessionId;
-            try {
-                sessionId = Long.parseLong(sessionIdObj.toString());
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid session ID format");
-            }
-
-            // Get seats and snacks
-            List<Object> seats = (List<Object>) paymentRequest.get("seats");
-            Map<String, Object> snacks = (Map<String, Object>) paymentRequest.get("snacks");
-
-            // Check if loyalty points redemption is requested
-            boolean applyRedemption = Boolean.TRUE.equals(paymentRequest.get("applyRedemption"));
-
-            logger.info(
-                    "Processing payment request - User: {}, Amount: {}, Movie: {}, Session: {}, Apply Redemption: {}",
-                    user.getUsername(), amount, movieId, sessionId, applyRedemption);
-
-            // Process payment
-            paymentService.processPayment(paymentMethodId, amount, seats, snacks, user, movieId, sessionId,
-                    applyRedemption);
-
-            response.put("success", true);
-            response.put("redirectUrl", "/user/dashboard");
-
-            logger.info("Payment processed successfully for user: {}", user.getUsername());
-
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid payment request: {}", e.getMessage());
-            response.put("success", false);
-            response.put("error", e.getMessage());
-        } catch (Exception e) {
-            logger.error("Payment processing error: {}", e.getMessage());
-            response.put("success", false);
-            response.put("error", e.getMessage());
-        }
-
-        return response;
+    public Map<String, Object> process(Authentication auth, @RequestBody PaymentService.OrderRequest order) {
+        Booking booking = paymentService.checkout(userService.findByUsername(auth.getName()), order);
+        return Map.of("success", true, "redirectUrl", "/user/payment/success?booking=" + booking.getId());
     }
 
     @GetMapping("/success")
-    public String getSuccessPage() {
+    public String success(Authentication auth, @RequestParam("booking") Long bookingId, Model model) {
+        User user = userService.findByUsername(auth.getName());
+        Booking booking = bookingService.getUserBookings(user).stream()
+                .filter(b -> b.getId().equals(bookingId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        model.addAttribute("booking", booking);
+        model.addAttribute("points", user.getPoints());
         return "user/payment-success";
+    }
+
+    /** Order problems (bad seat, taken seat, card declined) are shown to the customer as-is. */
+    @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> orderRejected(RuntimeException e) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
     }
 }

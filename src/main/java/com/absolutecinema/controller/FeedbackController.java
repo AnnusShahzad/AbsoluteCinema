@@ -1,57 +1,49 @@
 package com.absolutecinema.controller;
 
 import com.absolutecinema.entity.Feedback;
-import com.absolutecinema.entity.User;
 import com.absolutecinema.service.FeedbackService;
 import com.absolutecinema.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+/** Customers post feedback; everything else is admin-only (see SecurityConfig). */
 @RestController
 @RequestMapping("/api/feedback")
 public class FeedbackController {
 
-    @Autowired
-    private FeedbackService feedbackService;
+    private final FeedbackService feedbackService;
+    private final UserService userService;
 
-    @Autowired
-    private UserService userService;
+    public FeedbackController(FeedbackService feedbackService, UserService userService) {
+        this.feedbackService = feedbackService;
+        this.userService = userService;
+    }
 
     @PostMapping
-    public ResponseEntity<Feedback> submitFeedback(@RequestBody Map<String, Object> feedbackRequest) {
-        // Get the authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByUsername(auth.getName());
-
-        // Create and populate the feedback entity
-        Feedback feedback = new Feedback();
-        feedback.setUser(user);
-        feedback.setMovieId(Long.valueOf(feedbackRequest.get("movieId").toString()));
-        feedback.setRating(Integer.valueOf(feedbackRequest.get("rating").toString()));
-        feedback.setComments(feedbackRequest.get("comments").toString());
-        feedback.setCreatedAt(LocalDateTime.now());
-
-        Feedback savedFeedback = feedbackService.saveFeedback(feedback);
-        return ResponseEntity.ok(savedFeedback);
+    public Feedback submitFeedback(Authentication auth, @RequestBody FeedbackRequest request) {
+        return feedbackService.submit(userService.findByUsername(auth.getName()), request.movieId(),
+                request.rating(), request.comments());
     }
 
     @GetMapping
-    public ResponseEntity<List<Feedback>> getAllFeedback() {
-        List<Feedback> feedbackList = feedbackService.getAllFeedback();
-        return ResponseEntity.ok(feedbackList);
+    public List<Feedback> getAllFeedback() {
+        return feedbackService.getAllFeedback();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Feedback> getFeedbackById(@PathVariable Long id) {
-        Feedback feedback = feedbackService.getFeedbackById(id);
-        return ResponseEntity.ok(feedback);
+    public Feedback getFeedbackById(@PathVariable Long id) {
+        return feedbackService.getFeedbackById(id);
     }
 
     @DeleteMapping("/{id}")
@@ -61,13 +53,20 @@ public class FeedbackController {
     }
 
     @GetMapping("/statistics")
-    public ResponseEntity<Map<String, Object>> getFeedbackStatistics() {
-        Map<String, Object> stats = feedbackService.getFeedbackStatistics();
-        return ResponseEntity.ok(stats);
+    public Map<String, Object> getFeedbackStatistics() {
+        return feedbackService.getFeedbackStatistics();
     }
 
     @GetMapping("/list")
     public List<Map<String, Object>> getFeedbackList() {
         return feedbackService.getFeedbackList();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> rejected(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+    }
+
+    public record FeedbackRequest(Long movieId, Integer rating, String comments) {
     }
 }

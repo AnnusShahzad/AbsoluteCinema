@@ -605,6 +605,11 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
+  <style>
+    .site-footer { margin-top: 64px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #8a8d99; font-size: 0.9rem; }
+    .site-footer a { color: #b9b4d6; text-decoration: none; }
+    .site-footer a:hover { color: #fff; }
+  </style>
 </head>
 
 <body>
@@ -636,12 +641,13 @@
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
                 <li><a href="/user/dashboard" class="nav-link px-2">Home</a></li>
                 <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-                <li><a href="/bookings" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/user/snacks" class="nav-link px-2">Snacks</a></li>
-                <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
+                <li><a href="/bookings/history" class="nav-link px-2">My Bookings</a></li>
+                <li><a href="/loyalty" class="nav-link px-2">Loyalty</a></li>
                 <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
                 <li><a href="/contact" class="nav-link px-2">Contact</a></li>
-            </ul>
+                <li><a href="/account/settings" class="nav-link px-2">Settings</a></li>
+                <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+              </ul>
         </div>
     </div>
 </div>
@@ -654,16 +660,16 @@
             <div class="row">
                 {% for snack in snacks %}
                 <div class="col-md-6">
-                    <div class="snack-card" data-snack-id="{{ snack.id }}">
+                    <div class="snack-card" data-snack-id="{{ snack.id }}" data-price="{{ snack.price }}">
                         {% if snack.imageUrl is not null %}
                         <img src="{{ snack.imageUrl }}" alt="{{ snack.name }}" class="snack-image" loading="lazy">
                         {% endif %}
                         <h3 class="snack-title">{{ snack.name }}</h3>
-                        <div class="snack-price">PKR {{ snack.price }}</div>
+                        <div class="snack-price">PKR {{ snack.price | numberformat("#,##0") }}</div>
                         <div class="quantity-control">
-                            <button class="quantity-btn" onclick="decrementQuantity('{{ snack.id }}')">-</button>
-                            <input type="number" id="quantity-{{ snack.id }}" class="quantity-input" value="0" min="0" max="{{ snack.quantity }}" onchange="updateQuantity('{{ snack.id }}')">
-                            <button class="quantity-btn" onclick="incrementQuantity('{{ snack.id }}')">+</button>
+                            <button type="button" class="quantity-btn" onclick="changeQuantity('{{ snack.id }}', -1)" aria-label="Remove one {{ snack.name }}">-</button>
+                            <input type="number" id="quantity-{{ snack.id }}" class="quantity-input" value="0" min="0" max="{{ snack.quantity }}" onchange="changeQuantity('{{ snack.id }}', 0)" aria-label="{{ snack.name }} quantity">
+                            <button type="button" class="quantity-btn" onclick="changeQuantity('{{ snack.id }}', 1)" aria-label="Add one {{ snack.name }}">+</button>
                         </div>
                     </div>
                 </div>
@@ -686,237 +692,102 @@
                 <div class="total-price">
                     Total: <span id="total-price">PKR 0</span>
                 </div>
-                <button class="continue-btn" onclick="proceedToPayment()">Continue to Payment</button>
+                <button type="button" class="continue-btn" id="continueBtn" onclick="proceedToPayment()">Continue to Payment</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let cart = {};
-    let selectedSeats = [];
-    let movieTitle = '';
-    let movieId = '';
-    let sessionTime = '';
-    let sessionId = '';
-    let ticketPrice = 12; // PKR 12 per seat
-    let numberOfTickets = 0;
+    // The order started on the seat page; snacks are stored by id as { name, price, quantity }.
+    const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
+    const selectedSeats = Array.isArray(orderDetails.seats) ? orderDetails.seats : [];
+    const cart = orderDetails.snacks && !Array.isArray(orderDetails.snacks) ? orderDetails.snacks : {};
+    const formatPkr = amount => `PKR ${amount.toLocaleString()}`;
 
-    // Load all order details from sessionStorage when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        // Try to get orderDetails object
-        const orderDetails = JSON.parse(sessionStorage.getItem('orderDetails') || '{}');
-        movieTitle = orderDetails.movieTitle || sessionStorage.getItem('movieTitle') || '';
-        movieId = orderDetails.movieId || sessionStorage.getItem('movieId') || '';
-        sessionTime = orderDetails.sessionTime || sessionStorage.getItem('sessionTime') || '';
-        sessionId = orderDetails.sessionId || sessionStorage.getItem('sessionId') || '';
-        ticketPrice = orderDetails.ticketPrice || 12;
-        selectedSeats = orderDetails.seats || JSON.parse(sessionStorage.getItem('selectedSeats') || '[]');
-        numberOfTickets = selectedSeats.length;
-        // If snacks exist in orderDetails, load them
-        if (orderDetails.snacks) {
-            cart = {};
-            if (Array.isArray(orderDetails.snacks)) {
-                orderDetails.snacks.forEach(snack => {
-                    cart[snack.id] = { name: snack.name, price: snack.price, quantity: snack.quantity };
-                });
-            } else if (typeof orderDetails.snacks === 'object') {
-                cart = orderDetails.snacks;
-            }
-        } else {
-            cart = JSON.parse(sessionStorage.getItem('selectedSnacks') || '{}');
-        }
-        updateSeatsList();
-    });
+    function cartLine(label, amount) {
+        const line = document.createElement('div');
+        line.className = 'cart-item';
+        line.innerHTML = '<span></span><span></span>';
+        line.children[0].textContent = label;
+        line.children[1].textContent = formatPkr(amount);
+        return line;
+    }
 
-    function updateSeatsList() {
+    function renderCart() {
         const seatsList = document.getElementById('seats-list');
-        seatsList.innerHTML = '';
-        selectedSeats.forEach(seat => {
-            let seatLabel = '';
-            if (typeof seat === 'object' && seat !== null) {
-                seatLabel = `Row ${seat.row} Seat ${seat.seat}`;
-            } else {
-                seatLabel = seat;
-            }
-            const seatElement = document.createElement('div');
-            seatElement.className = 'cart-item';
-            seatElement.innerHTML = `
-                <span>${seatLabel}</span>
-                <span>PKR ${ticketPrice}</span>
-            `;
-            seatsList.appendChild(seatElement);
-        });
-        updateCartUI();
+        const cartItems = document.getElementById('cart-items');
+        seatsList.replaceChildren(...selectedSeats.map(seat => cartLine(seat.label, seat.price)));
+        cartItems.replaceChildren(...Object.values(cart).map(item => cartLine(`${item.name} x ${item.quantity}`, item.price * item.quantity)));
+        const total = selectedSeats.reduce((sum, seat) => sum + seat.price, 0)
+            + Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+        document.getElementById('total-price').textContent = formatPkr(total);
     }
 
-    function updateQuantity(snackId) {
+    // delta of 0 means "take the value typed into the box"
+    function changeQuantity(snackId, delta) {
         const input = document.getElementById(`quantity-${snackId}`);
-        const quantity = parseInt(input.value);
-        const maxQuantity = parseInt(input.max);
-        
-        if (quantity < 0) input.value = 0;
-        if (quantity > maxQuantity) input.value = maxQuantity;
-        
-        updateCart(snackId, parseInt(input.value));
-    }
+        const max = parseInt(input.max, 10);
+        const typed = parseInt(input.value, 10) || 0;
+        const quantity = Math.min(max, Math.max(0, typed + delta));
+        input.value = quantity;
 
-    function incrementQuantity(snackId) {
-        const input = document.getElementById(`quantity-${snackId}`);
-        const currentValue = parseInt(input.value);
-        const maxQuantity = parseInt(input.max);
-        
-        if (currentValue < maxQuantity) {
-            input.value = currentValue + 1;
-            updateCart(snackId, currentValue + 1);
-        }
-    }
-
-    function decrementQuantity(snackId) {
-        const input = document.getElementById(`quantity-${snackId}`);
-        const currentValue = parseInt(input.value);
-        
-        if (currentValue > 0) {
-            input.value = currentValue - 1;
-            updateCart(snackId, currentValue - 1);
-        }
-    }
-
-    function updateCart(snackId, quantity) {
-        const snackCard = document.querySelector(`[data-snack-id="${snackId}"]`);
-        const snackName = snackCard.querySelector('.snack-title').textContent;
-        const snackPrice = parseFloat(snackCard.querySelector('.snack-price').textContent.replace('PKR ', ''));
+        const card = document.querySelector(`[data-snack-id="${snackId}"]`);
         if (quantity > 0) {
             cart[snackId] = {
-                name: snackName,
-                price: snackPrice,
-                quantity: quantity
+                name: card.querySelector('.snack-title').textContent,
+                price: parseFloat(card.dataset.price),
+                quantity
             };
         } else {
             delete cart[snackId];
         }
-        updateCartUI();
-    }
-
-    function updateCartUI() {
-        const cartItems = document.getElementById('cart-items');
-        const totalPriceElement = document.getElementById('total-price');
-        let totalPrice = 0;
-        // Calculate seats total
-        totalPrice += selectedSeats.length * ticketPrice;
-        cartItems.innerHTML = '';
-        // Add snacks to cart display
-        for (const [snackId, item] of Object.entries(cart)) {
-            const itemTotal = item.price * item.quantity;
-            totalPrice += itemTotal;
-            const cartItem = document.createElement('div');
-            cartItem.className = 'cart-item';
-            cartItem.innerHTML = `
-                <span>${item.name} x ${item.quantity}</span>
-                <span>PKR ${itemTotal}</span>
-            `;
-            cartItems.appendChild(cartItem);
-        }
-        totalPriceElement.textContent = `PKR ${totalPrice}`;
+        renderCart();
     }
 
     function proceedToPayment() {
-        // Build full orderDetails object
-        const snacksArray = Object.entries(cart).map(([id, snack]) => ({
-            id,
-            name: snack.name,
-            price: snack.price,
-            quantity: snack.quantity
-        }));
-        const snacksTotal = snacksArray.reduce((sum, snack) => sum + snack.price * snack.quantity, 0);
-        const orderDetails = {
-            movieTitle,
-            movieId,
-            sessionTime,
-            sessionId,
-            seats: selectedSeats,
-            numberOfTickets: selectedSeats.length,
-            ticketPrice,
-            snacks: cart,
-            snacksTotal,
-            totalAmount: (selectedSeats.length * ticketPrice + snacksTotal).toFixed(2)
-        };
-        // Save all individual fields for backward compatibility
-        sessionStorage.setItem('movieTitle', movieTitle);
-        sessionStorage.setItem('movieId', movieId);
-        sessionStorage.setItem('sessionTime', sessionTime);
-        sessionStorage.setItem('sessionId', sessionId);
-        sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
-        sessionStorage.setItem('selectedSnacks', JSON.stringify(cart));
+        orderDetails.snacks = cart;
         sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
-        // Redirect to payment page
         window.location.href = '/user/payment';
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (selectedSeats.length === 0) {
+            document.getElementById('seats-list').innerHTML =
+                '<p class="text-muted small mb-0">Pick a movie and seats first. <a href="/movies">Browse movies</a></p>';
+            document.getElementById('continueBtn').disabled = true;
+            return;
+        }
+        Object.entries(cart).forEach(([snackId, item]) => {
+            const input = document.getElementById(`quantity-${snackId}`);
+            if (input) {
+                input.value = item.quantity;
+            } else {
+                delete cart[snackId];
+            }
+        });
+        renderCart();
+    });
 </script>
 </body>
 
 </html>
 
-<footer class="footer">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 mb-3 mb-lg-0">
-                <h6 class="footer-title">Absolute Cinema</h6>
-                <p class="text-muted small">Bringing you the best cinematic experiences with comfort and style.</p>
-                <div class="social-links">
-                    <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="social-link"><i class="bi bi-twitter"></i></a>
-                    <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-4 mb-3 mb-md-0">
-                <h6 class="footer-title">Explore</h6>
-                <ul class="footer-links">
-                    <li><a href="#">Movies</a></li>
-                    <li><a href="#">Schedule</a></li>
-                    <li><a href="#">Promotions</a></li>
-                </ul>
-            </div>
-            <div class="col-lg-2 col-md-4 mb-3 mb-md-0">
-                <h6 class="footer-title">Visit Us</h6>
-                <ul class="footer-links">
-                    <li><a href="#">Locations</a></li>
-                    <li><a href="#">Directions</a></li>
-                    <li><a href="#">Parking Info</a></li>
-                </ul>
-            </div>
-            <div class="col-lg-4 col-md-4">
-                <h6 class="footer-title">Support</h6>
-                <ul class="footer-links">
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Contact Us</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="copyright mt-4">
-            <p>&copy; 2025 Absolute Cinema. All rights reserved.</p>
-        </div>
+<footer class="site-footer">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3 py-4">
+      <span>&copy; 2025 Absolute Cinema</span>
+      <nav class="d-flex flex-wrap gap-4" aria-label="Footer">
+        <a href="/movies">Movies</a>
+        <a href="/bookings/history">My Bookings</a>
+        <a href="/loyalty">Loyalty</a>
+        <a href="/feedback">Feedback</a>
+        <a href="/contact">Contact</a>
+      </nav>
     </div>
-</footer>
+  </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const themeButtons = document.querySelectorAll('.theme-item');
-
-        themeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const theme = button.getAttribute('data-bs-theme-value');
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                themeButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-            });
-        });
-    });
-
-</script>
+<script src="/topbar/bar.js"></script>
 </body>
 
 </html>
