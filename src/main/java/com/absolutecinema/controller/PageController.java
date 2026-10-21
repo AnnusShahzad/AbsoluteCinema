@@ -14,21 +14,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageController {
 
-    private final LoyaltyService loyaltyService;
     private final UserService userService;
     private final MovieService movieService;
 
     @Autowired
-    public PageController(LoyaltyService loyaltyService, UserService userService, MovieService movieService) {
-        this.loyaltyService = loyaltyService;
+    public PageController(UserService userService, MovieService movieService) {
         this.userService = userService;
         this.movieService = movieService;
     }
 
     @GetMapping("/user/dashboard")
     public String getUserDashboard(Model model) {
-        // Get all movies for the slider
-        model.addAttribute("movies", movieService.getAllMovies());
+        model.addAttribute("movies", movieService.getMoviesByPopularity());
+        model.addAttribute("pointsPerTicket", LoyaltyService.POINTS_PER_TICKET);
+        model.addAttribute("pointsPerSnack", LoyaltyService.POINTS_PER_SNACK);
+        model.addAttribute("redemptionCost", LoyaltyService.REDEMPTION_COST);
         return "user/dashboard";
     }
 
@@ -56,17 +56,8 @@ public class PageController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findByUsername(auth.getName());
 
-        // Fetch points directly from the User entity
         int points = user.getPoints();
-
-        // Optionally, you can keep loyaltyLevel logic if you want to derive it from
-        // points
-        String loyaltyLevel = "BRONZE";
-        if (points >= 1000) {
-            loyaltyLevel = "GOLD";
-        } else if (points >= 500) {
-            loyaltyLevel = "SILVER";
-        }
+        String loyaltyLevel = LoyaltyService.tierFor(points);
 
         // Add user and points to the model
         model.addAttribute("user", user);

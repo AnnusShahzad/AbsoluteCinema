@@ -1,5 +1,6 @@
 package com.absolutecinema.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -35,7 +36,11 @@ public class Movie {
     @Column(name = "ticketssold", nullable = false)
     private int ticketssold;
 
+    @Column(name = "poster_url")
+    private String posterUrl;
+
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Session> sessions;
 
     // Getters and Setters
@@ -102,6 +107,14 @@ public class Movie {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public String getPosterUrl() {
+        return posterUrl;
+    }
+
+    public void setPosterUrl(String posterUrl) {
+        this.posterUrl = posterUrl == null || posterUrl.isBlank() ? null : posterUrl.trim();
     }
 
     public List<Session> getSessions() {

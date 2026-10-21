@@ -7,9 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <link rel="stylesheet" href="/admin/managebooking.css">
     <link rel="stylesheet" href="/topbar/bar.css">
+    <meta name="_csrf" content="{{ _csrf.token }}">
+    <meta name="_csrf_header" content="{{ _csrf.headerName }}">
 </head>
 <body>
 <!-- Theme Toggle -->
@@ -98,13 +99,13 @@
 
         <div class="d-flex flex-wrap align-items-center mt-3">
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
-                <li><a href="/admin/dashboard" class="nav-link px-2">Home</a></li>
-                <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-                <li><a href="/employee/dashboard" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
-                <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
-                <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
-                <li><a href="/contact" class="nav-link px-2">Contact</a></li>
+                <li><a href="/admin/dashboard" class="nav-link px-2">Dashboard</a></li>
+                <li><a href="/admin/analytics" class="nav-link px-2">Analytics</a></li>
+                <li><a href="/admin/manageproduct" class="nav-link px-2">Movies &amp; Snacks</a></li>
+                <li><a href="/admin/managebooking" class="nav-link px-2">Bookings</a></li>
+                <li><a href="/admin/manageloyalty" class="nav-link px-2">Loyalty</a></li>
+                <li><a href="/admin/managefeedback" class="nav-link px-2">Feedback</a></li>
+                <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
             </ul>
         </div>
     </div>
@@ -112,16 +113,15 @@
     <!-- Management Section -->
     <div class="management-container">
       <div class="tabs-container">
-        <button class="tab-btn active" data-tab="bookings">Bookings</button>
+        <button class="tab-btn active" data-tab="bookings">Bookings ({{ bookings | length }})</button>
       </div>
 
-      <!-- Bookings Tab -->
       <div class="tab-content">
         <div class="tab-panel active" id="bookings-panel">
           <div class="top-actions">
             <div class="search-bar">
-              <input type="text" placeholder="Search bookings...">
-              <button><i class="fas fa-search"></i></button>
+              <input type="text" placeholder="Search by customer, movie or booking ID...">
+              <button type="button"><i class="fas fa-search"></i></button>
             </div>
           </div>
 
@@ -130,144 +130,44 @@
               <thead>
                 <tr>
                   <th>Booking ID</th>
-                  <th>Username</th>
+                  <th>Customer</th>
                   <th>Movie</th>
-                  <th>Screen</th>
-                  <th>Payment Status</th>
+                  <th>Showtime</th>
+                  <th>Tickets</th>
+                  <th>Total</th>
+                  <th>Booked On</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>#B001</td>
-                  <td>john_doe</td>
-                  <td>The Last Journey</td>
-                  <td>Screen 1</td>
-                  <td>Paid</td>
+                {% for booking in bookings %}
+                <tr data-row>
+                  <td>#B{{ booking.id }}</td>
+                  <td>{{ booking.user.username }}</td>
+                  <td>{% if booking.movie is null %}Deleted movie{% else %}{{ booking.movie.title }}{% endif %}</td>
+                  <td>{% if booking.session is null %}-{% else %}{{ booking.session.sessionTime | date("dd MMM yyyy, HH:mm") }}{% endif %}</td>
+                  <td>{{ booking.numberOfTickets }}</td>
+                  <td>PKR {{ booking.totalPrice | numberformat("#,##0.00") }}</td>
+                  <td>{{ booking.bookingTime | date("dd MMM yyyy") }}</td>
                   <td>
-                    <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                    <button type="button" class="action-btn delete-btn" title="Cancel booking"
+                            data-delete-url="/bookings/{{ booking.id }}/cancel" data-delete-method="POST"
+                            data-label="booking #B{{ booking.id }}">
+                      <i class="fas fa-trash"></i>
+                    </button>
                   </td>
                 </tr>
-                <tr>
-                  <td>#B002</td>
-                  <td>jane_smith</td>
-                  <td>Whispers in the Dark</td>
-                  <td>Screen 3</td>
-                  <td>Pending</td>
-                  <td>
-                    <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#B003</td>
-                  <td>mike_johnson</td>
-                  <td>Love in Paris</td>
-                  <td>Screen 2</td>
-                  <td>Paid</td>
-                  <td>
-                    <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#B004</td>
-                  <td>sarah_williams</td>
-                  <td>Quantum Paradox</td>
-                  <td>Screen 4</td>
-                  <td>Failed</td>
-                  <td>
-                    <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#B005</td>
-                  <td>robert_brown</td>
-                  <td>The Hidden Truth</td>
-                  <td>Screen 1</td>
-                  <td>Paid</td>
-                  <td>
-                    <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-                  </td>
-                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center">No bookings yet.</td></tr>
+                {% endfor %}
               </tbody>
             </table>
-          </div>
-
-          <div class="pagination">
-            <button>Previous</button>
-            <button class="active">1</button>
-            <button>2</button>
-            <button>3</button>
-            <button>Next</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/topbar/bar.js"></script>
-  <script>
-    // Search functionality
-    const searchInput = document.querySelector('.search-bar input');
-    const searchButton = document.querySelector('.search-bar button');
-
-    searchButton.addEventListener('click', searchBookings);
-    searchInput.addEventListener('keyup', function(event) {
-      if (event.key === 'Enter') {
-        searchBookings();
-      }
-    });
-
-    function searchBookings() {
-      const searchTerm = searchInput.value.toLowerCase();
-      const tableRows = document.querySelectorAll('tbody tr');
-
-      tableRows.forEach(row => {
-        const bookingId = row.cells[0].textContent.toLowerCase();
-        const username = row.cells[1].textContent.toLowerCase();
-        const movie = row.cells[2].textContent.toLowerCase();
-        const screen = row.cells[3].textContent.toLowerCase();
-        const paymentStatus = row.cells[4].textContent.toLowerCase();
-
-        if (bookingId.includes(searchTerm) ||
-            username.includes(searchTerm) ||
-            movie.includes(searchTerm) ||
-            screen.includes(searchTerm) ||
-            paymentStatus.includes(searchTerm)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
-      });
-    }
-
-    // Delete functionality
-    const deleteBtns = document.querySelectorAll('.delete-btn');
-    deleteBtns.forEach(btn => {
-      btn.addEventListener('click', function() {
-        const row = this.closest('tr');
-        const bookingId = row.cells[0].textContent;
-
-        if (confirm(`Are you sure you want to delete booking ${bookingId}?`)) {
-          row.remove();
-          // In a real application, you would send a request to the server to delete the booking
-        }
-      });
-    });
-
-    // Tab switching (keeping this in case you want to add more tabs later)
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        // Remove active class from all tabs
-        tabBtns.forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-
-        // Add active class to clicked tab
-        btn.classList.add('active');
-        const tabId = btn.getAttribute('data-tab');
-        document.getElementById(`${tabId}-panel`).classList.add('active');
-      });
-    });
-  </script>
+<script src="/admin/admin.js"></script>
 </body>
 </html>

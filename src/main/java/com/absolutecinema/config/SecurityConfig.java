@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -45,9 +46,15 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/topbar/**",
-                                "/api/**",
+                                "/api/users/username/**",
                                 "/error")
                         .permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/employee/**").hasRole("EMPLOYEE")
+                        .requestMatchers(HttpMethod.GET, "/api/movies/**", "/api/sessions/**", "/api/snacks/**")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/feedback").authenticated()
+                        .requestMatchers("/api/**", "/bookings/*/cancel").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/auth/login")
@@ -63,10 +70,7 @@ public class SecurityConfig {
                         .permitAll())
                 .sessionManagement(session -> session
                         .maximumSessions(1)
-                        .expiredUrl("/auth/login"))
-                .csrf(csrf -> csrf.ignoringRequestMatchers(
-                        new AntPathRequestMatcher("/user/payment/process"),
-                        new AntPathRequestMatcher("/api/feedback")));
+                        .expiredUrl("/auth/login"));
 
         return http.build();
     }
@@ -79,12 +83,22 @@ public class SecurityConfig {
                 throw new UsernameNotFoundException("User not found: " + username);
             }
 
-            List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList("ROLE_USER");
+            List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(roleFor(user.getAccountType()));
 
             return new org.springframework.security.core.userdetails.User(
                     user.getUsername(),
                     user.getPassword(),
                     authorities);
         };
+    }
+
+    static String roleFor(String accountType) {
+        if ("admin".equalsIgnoreCase(accountType)) {
+            return "ROLE_ADMIN";
+        }
+        if ("employee".equalsIgnoreCase(accountType)) {
+            return "ROLE_EMPLOYEE";
+        }
+        return "ROLE_USER";
     }
 }

@@ -33,16 +33,19 @@ window.addEventListener('DOMContentLoaded', () => {
 const searchInput = document.getElementById('searchInput');
 const dropdown = document.getElementById('filterDropdown');
 
-searchInput.addEventListener('focus', () => {
-    dropdown.style.display = 'block';
-});
+// Not every page has the search box
+if (searchInput && dropdown) {
+    searchInput.addEventListener('focus', () => {
+        dropdown.style.display = 'block';
+    });
 
-// Close dropdown when clicking outside
-document.addEventListener('click', (event) => {
-    if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.style.display = 'none';
-    }
-});
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
 
 function toggleFilterSection(sectionId) {
     const options = document.getElementById(sectionId + 'Options');

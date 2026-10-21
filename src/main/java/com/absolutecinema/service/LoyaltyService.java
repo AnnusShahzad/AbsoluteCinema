@@ -1,57 +1,58 @@
 package com.absolutecinema.service;
 
-import com.absolutecinema.entity.LoyaltyAccount;
-import com.absolutecinema.repository.LoyaltyAccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.absolutecinema.entity.User;
+import com.absolutecinema.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Loyalty rules. Points are stored on {@link User}; this class owns how they are earned,
+ * spent and mapped to tiers.
+ */
 @Service
 public class LoyaltyService {
 
-    @Autowired
-    private final LoyaltyAccountRepository loyaltyAccountRepository;
-    
-    public LoyaltyService(LoyaltyAccountRepository loyaltyAccountRepository) {
-        this.loyaltyAccountRepository = loyaltyAccountRepository;
+    public static final int POINTS_PER_TICKET = 50;
+    public static final int POINTS_PER_SNACK = 20;
+    public static final int REDEMPTION_COST = 250;
+    public static final int SILVER_THRESHOLD = 500;
+    public static final int GOLD_THRESHOLD = 1000;
+
+    private final UserRepository userRepository;
+
+    public LoyaltyService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public Optional<LoyaltyAccount> getLoyaltyAccountByUserId(Long userId) {
-        return loyaltyAccountRepository.findById(userId);
-    }
-
-    public LoyaltyAccount createLoyaltyAccount(LoyaltyAccount loyaltyAccount) {
-        return loyaltyAccountRepository.save(loyaltyAccount);
-    }
-
-    public LoyaltyAccount updateLoyaltyAccount(LoyaltyAccount loyaltyAccount) {
-        return loyaltyAccountRepository.save(loyaltyAccount);
-    }
-
-    public void deleteLoyaltyAccount(Long userId) {
-        loyaltyAccountRepository.deleteById(userId);
-    }
-
-    public void addPoints(Long userId, int points) {
-        LoyaltyAccount account = loyaltyAccountRepository.findById(userId).orElseThrow(() -> new RuntimeException("Account not found"));
-        account.setPoints(account.getPoints() + points);
-        loyaltyAccountRepository.save(account);
-    }
-
-    public void redeemPoints(Long userId, int points) {
-        LoyaltyAccount account = loyaltyAccountRepository.findById(userId).orElseThrow(() -> new RuntimeException("Account not found"));
-        if (account.getPoints() >= points) {
-            account.setPoints(account.getPoints() - points);
-            loyaltyAccountRepository.save(account);
-        } else {
-            throw new RuntimeException("Insufficient points");
+    public static String tierFor(int points) {
+        if (points >= GOLD_THRESHOLD) {
+            return "GOLD";
         }
-    }
-    
-    public List<LoyaltyAccount> getAllLoyaltyAccounts() {
-        return loyaltyAccountRepository.findAll();
+        if (points >= SILVER_THRESHOLD) {
+            return "SILVER";
+        }
+        return "BRONZE";
     }
 
+    public static int pointsEarned(int tickets, int snackItems) {
+        return tickets * POINTS_PER_TICKET + snackItems * POINTS_PER_SNACK;
+    }
+
+    /** Customer accounts, highest balance first. */
+    public List<User> getMembers() {
+        return userRepository.findByAccountTypeIgnoreCaseOrderByPointsDesc("user");
+    }
+
+    public LoyaltySummary summarize(List<User> members) {
+        int totalPoints = members.stream().mapToInt(User::getPoints).sum();
+        long silver = members.stream().filter(m -> "SILVER".equals(tierFor(m.getPoints()))).count();
+        long gold = members.stream().filter(m -> "GOLD".equals(tierFor(m.getPoints()))).count();
+        int average = members.isEmpty() ? 0 : totalPoints / members.size();
+        return new LoyaltySummary(members.size(), average, totalPoints, silver, gold);
+    }
+
+    public record LoyaltySummary(int members, int averagePoints, int totalPoints, long silverMembers,
+            long goldMembers) {
+    }
 }

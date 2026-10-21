@@ -673,7 +673,7 @@
             <li><a href="/" class="nav-link px-2">Home</a></li>
             <li><a href="/movies" class="nav-link px-2">Movies</a></li>
             <li><a href="/bookings" class="nav-link px-2">Bookings</a></li>
-            <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
+            <li><a href="/user/snacks" class="nav-link px-2">Snacks</a></li>
             <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
             <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
             <li><a href="/contact" class="nav-link px-2">Contact</a></li>

@@ -1,6 +1,5 @@
 package com.absolutecinema.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -19,6 +18,9 @@ public class Snack {
 
     @Column(nullable = false)
     private String description;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Column(nullable = false)
     private int snackssold;
@@ -49,6 +51,14 @@ public class Snack {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl == null || imageUrl.isBlank() ? null : imageUrl.trim();
     }
 
     public String getDescription() {

@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
      <link rel="stylesheet" href="/admin/dashboard.css">
      <link rel="stylesheet" href="/topbar/bar.css">
+    <meta name="_csrf" content="{{ _csrf.token }}">
+    <meta name="_csrf_header" content="{{ _csrf.headerName }}">
 </head>
 <body>
 <!-- Theme Toggle -->
@@ -98,13 +100,12 @@
 
         <div class="d-flex flex-wrap align-items-center mt-3">
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0">
-                <li><a href="/admin/dashboard" class="nav-link px-2">Home</a></li>
-                <li><a href="/movies" class="nav-link px-2">Movies</a></li>
-                <li><a href="/bookings/history" class="nav-link px-2">Bookings</a></li>
-                <li><a href="/snacks" class="nav-link px-2">Snacks</a></li>
-                <li><a href="/loyalty" class="nav-link px-2">Loyalty Program</a></li>
-                <li><a href="/feedback" class="nav-link px-2">Feedback</a></li>
-                <li><a href="/contact" class="nav-link px-2">Contact</a></li>
+                <li><a href="/admin/dashboard" class="nav-link px-2">Dashboard</a></li>
+                <li><a href="/admin/analytics" class="nav-link px-2">Analytics</a></li>
+                <li><a href="/admin/manageproduct" class="nav-link px-2">Movies &amp; Snacks</a></li>
+                <li><a href="/admin/managebooking" class="nav-link px-2">Bookings</a></li>
+                <li><a href="/admin/manageloyalty" class="nav-link px-2">Loyalty</a></li>
+                <li><a href="/admin/managefeedback" class="nav-link px-2">Feedback</a></li>
                 <li><a href="/logout" class="nav-link px-2 text-danger"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
             </ul>
         </div>

@@ -10,10 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -84,9 +85,8 @@ public class SalaryService {
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         // Calculate hours worked
-        BigDecimal hours = BigDecimal.valueOf(
-                endTime.getHour() - startTime.getHour() +
-                        (endTime.getMinute() - startTime.getMinute()) / 60.0);
+        BigDecimal hours = BigDecimal.valueOf(Duration.between(startTime, endTime).toMinutes())
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
 
         Shift shift = new Shift();
         shift.setEmployee(employee);

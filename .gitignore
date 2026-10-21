@@ -28,8 +28,7 @@ replay_pid*
 *.iml
 *.ipr
 .gradle
-gradlew
-gradlew.bat
+.gradle-home/
 
 # Build output
 build
@@ -38,8 +37,8 @@ build
 # VS Code settings
 .vscode/
 
-# Gradle wrapper files
-gradle/wrapper/
+# Keep the Gradle wrapper so the project builds from a fresh clone
+!gradle/wrapper/gradle-wrapper.jar
 
 # Bin folder
 bin/

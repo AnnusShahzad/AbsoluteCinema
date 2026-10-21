@@ -109,22 +109,40 @@
 
   <!-- Main Content -->
   <div class="container">
-    <!-- Hero Banner -->
-    <div class="banner-section fadeIn">
-      <div class="banner-img active" style="background: url('https://picsum.photos/1024/768') center/cover no-repeat;"></div>
-      <div class="banner-img" style="background: url('https://picsum.photos/1024/600') center/cover no-repeat;"></div>
-      <div class="banner-img" style="background: url('https://picsum.photos/1024/500') center/cover no-repeat;"></div>
-      <div class="banner-overlay"></div>
-      <div class="banner-content">
-        <h2 class="banner-title" style="color: white;">Now Showing</h2>
-        <p class="banner-description"  style="color: white;">Experience the magic of cinema with our latest blockbuster releases in stunning IMAX and Dolby Atmos sound.</p>
-        <button class="btn banner-cta">Book Tickets</button>
+    <!-- Hero: the three best-selling movies -->
+    <section class="hero fadeIn" aria-label="Featured movies">
+      {% for movie in movies %}{% if loop.index < 3 %}
+      <article class="hero-slide{% if loop.first %} active{% endif %}">
+        <div class="hero-backdrop" style="background-image: url('{{ movie.posterUrl | default('/images/movies/default.svg') }}');"></div>
+        <div class="hero-shade"></div>
+        <img class="hero-poster" src="{{ movie.posterUrl | default('/images/movies/default.svg') }}" alt="{{ movie.title }} poster">
+        <div class="hero-content">
+          <span class="hero-badge"><i class="bi bi-fire"></i> #{{ loop.index + 1 }} at Absolute Cinema</span>
+          <h1 class="hero-title">{{ movie.title }}</h1>
+          <div class="hero-meta">
+            <span>{{ movie.releaseDate | slice(0, 4) }}</span>
+            <span>{{ ((movie.duration - movie.duration % 60) / 60) | numberformat("0") }}h {{ movie.duration % 60 }}m</span>
+            <span>{{ movie.genre }}</span>
+            <span>{{ movie.language }}</span>
+          </div>
+          <p class="hero-description">{{ movie.description }}</p>
+          <div class="hero-actions">
+            <a class="btn-hero-primary" href="/user/seats?movieId={{ movie.id }}"><i class="bi bi-ticket-perforated-fill"></i> Book Now</a>
+            <a class="btn-hero-secondary" href="/movies/{{ movie.id }}"><i class="bi bi-info-circle"></i> More Info</a>
+          </div>
+        </div>
+      </article>
+      {% endif %}{% endfor %}
+      <div class="hero-dots">
+        {% for movie in movies %}{% if loop.index < 3 %}
+        <button type="button" class="hero-dot{% if loop.first %} active{% endif %}" aria-label="Show {{ movie.title }}"></button>
+        {% endif %}{% endfor %}
       </div>
-    </div>
+    </section>
 
-    <!-- Now Playing Section -->
+    <!-- Trending Now -->
     <div class="mt-5 fadeIn delay-1">
-      <h2 class="section-title">Now Playing</h2>
+      <h2 class="section-title">Trending Now</h2>
       <div class="slider-section">
         <div class="slider-control slider-prev" onclick="slideLeft()">
           <i class="bi bi-chevron-left"></i>
@@ -137,21 +155,22 @@
           <div class="slider-item">
             <div class="movie-card">
               <div class="position-relative">
-                <img src="/api/movies/{{ movie.id }}/image" 
-                     class="card-img-top" 
+                <img src="{{ movie.posterUrl | default('/images/movies/default.svg') }}"
+                     class="card-img-top"
                      alt="{{ movie.title }}"
-                     onerror="this.src='/images/movies/default.jpg'">
+                     loading="lazy"
+                     onerror="this.onerror=null; this.src='/images/movies/default.svg'">
                 <div class="movie-rating">
-                  <i class="bi bi-star-fill"></i> {{ movie.rating|default('N/A') }}
+                  <i class="bi bi-ticket-perforated-fill"></i> {{ movie.ticketssold }}
                 </div>
               </div>
               <div class="card-body">
                 <span class="movie-genre">{{ movie.genre }}</span>
                 <h5 class="movie-title">{{ movie.title }}</h5>
                 <p class="movie-info">
-                  <i class="bi bi-clock"></i> {{ movie.duration }} min | <i class="bi bi-calendar3"></i> {{ movie.releaseDate }}
+                  <i class="bi bi-clock"></i> {{ movie.duration }} min | <i class="bi bi-translate"></i> {{ movie.language }}
                 </p>
-                <button class="btn btn-book" onclick="window.location.href='/user/seats?movieId={{ movie.id }}'">Book Now</button>
+                <a class="btn btn-book" href="/user/seats?movieId={{ movie.id }}">Book Now</a>
               </div>
             </div>
           </div>
@@ -160,128 +179,26 @@
       </div>
     </div>
 
-    <!-- Promo Section -->
-    <div class="promo-section fadeIn delay-2">
-      <div class="promo-content text-center">
-        <h3 class="promo-title">Premium Experience</h3>
-        <p class="mb-4">Upgrade to our VIP lounges with luxury recliners, personalized service, and gourmet dining options.</p>
-        <button class="btn banner-cta">Learn More</button>
+    <!-- Top 3 -->
+    <div class="mt-5 fadeIn delay-2">
+      <h2 class="section-title">Top 3 This Week</h2>
+      <div class="top-row">
+        {% for movie in movies %}{% if loop.index < 3 %}
+        <a class="top-item" href="/movies/{{ movie.id }}" aria-label="#{{ loop.index + 1 }} {{ movie.title }}">
+          <span class="top-rank" aria-hidden="true">{{ loop.index + 1 }}</span>
+          <img class="top-poster" src="{{ movie.posterUrl | default('/images/movies/default.svg') }}" alt="{{ movie.title }}" loading="lazy">
+        </a>
+        {% endif %}{% endfor %}
       </div>
     </div>
 
-    <!-- Coming Soon Section -->
-    <div class="coming-soon fadeIn delay-3">
-      <h2 class="section-title">Coming Soon</h2>
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <!-- Coming Soon Movie 1 -->
-        <div class="col">
-          <div class="movie-card">
-            <div class="position-relative">
-              <img src="https://picsum.photos/1024/968" class="card-img-top" alt="Movie poster">
-              <div class="movie-rating">
-                <i class="bi bi-calendar-check"></i> May 15
-              </div>
-            </div>
-            <div class="card-body">
-              <span class="movie-genre">Action</span>
-              <h5 class="movie-title">Renegade Squadron</h5>
-              <p class="movie-info">
-                <i class="bi bi-people-fill"></i> Jason Mitchell, Emma Stone
-              </p>
-              <button class="btn btn-book">Pre-Book</button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Coming Soon Movie 2 -->
-        <div class="col">
-          <div class="movie-card">
-            <div class="position-relative">
-              <img src="https://picsum.photos/824/568" class="card-img-top" alt="Movie poster">
-              <div class="movie-rating">
-                <i class="bi bi-calendar-check"></i> May 22
-              </div>
-            </div>
-            <div class="card-body">
-              <span class="movie-genre">Horror</span>
-              <h5 class="movie-title">Whispers in Shadow</h5>
-              <p class="movie-info">
-                <i class="bi bi-people-fill"></i> Daniel Kaluuya, Ana de Armas
-              </p>
-              <button class="btn btn-book">Pre-Book</button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Coming Soon Movie 3 -->
-        <div class="col">
-          <div class="movie-card">
-            <div class="position-relative">
-              <img src="https://picsum.photos/904/788" class="card-img-top" alt="Movie poster">
-              <div class="movie-rating">
-                <i class="bi bi-calendar-check"></i> June 5
-              </div>
-            </div>
-            <div class="card-body">
-              <span class="movie-genre">Romance</span>
-              <h5 class="movie-title">Autumn in Paris</h5>
-              <p class="movie-info">
-                <i class="bi bi-people-fill"></i> Zendaya, Tom Holland
-              </p>
-              <button class="btn btn-book">Pre-Book</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Special Events Section -->
-    <div class="mt-5 fadeIn delay-4">
-      <h2 class="section-title">Special Events</h2>
-      <div class="row g-4">
-        <!-- Event 1 -->
-        <div class="col-md-6">
-          <div class="movie-card">
-            <div class="row g-0">
-              <div class="col-4">
-                <img src="https://picsum.photos/1024/958" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover;" alt="Event image">
-              </div>
-              <div class="col-8">
-                <div class="card-body">
-                  <span class="movie-genre">Film Festival</span>
-                  <h5 class="movie-title">Independent Film Showcase</h5>
-                  <p class="movie-info">
-                    <i class="bi bi-calendar-event"></i> May 10-15, 2025
-                  </p>
-                  <p class="small">A week-long celebration of independent filmmaking featuring award-winning shorts and documentaries.</p>
-                  <button class="btn btn-book">Book Tickets</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Event 2 -->
-        <div class="col-md-6">
-          <div class="movie-card">
-            <div class="row g-0">
-              <div class="col-4">
-                <img src="https://picsum.photos/924/508" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover;" alt="Event image">
-              </div>
-              <div class="col-8">
-                <div class="card-body">
-                  <span class="movie-genre">Special Screening</span>
-                  <h5 class="movie-title">Classic Cinema Night</h5>
-                  <p class="movie-info">
-                    <i class="bi bi-calendar-event"></i> Every Thursday
-                  </p>
-                  <p class="small">Experience timeless classics on the big screen with restored 4K picture and remastered sound.</p>
-                  <button class="btn btn-book">Book Tickets</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- Loyalty promo -->
+    <div class="promo-section fadeIn delay-3">
+      <div class="promo-content text-center">
+        <h3 class="promo-title">Earn while you watch</h3>
+        <p class="mb-4">Collect {{ pointsPerTicket }} points for every ticket and {{ pointsPerSnack }} for every snack.
+          Redeem {{ redemptionCost }} points for a free ticket and snack at checkout.</p>
+        <a class="btn banner-cta" href="/loyalty">View My Points</a>
       </div>
     </div>
   </div>
@@ -338,19 +255,23 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Banner Rotation
-    let currentBannerIndex = 0;
-    const bannerImages = document.querySelectorAll('.banner-img');
+    // Hero rotation
+    const heroSlides = document.querySelectorAll('.hero-slide');
+    const heroDots = document.querySelectorAll('.hero-dot');
+    let currentSlide = 0;
 
-    function rotateBanner() {
-      bannerImages[currentBannerIndex].classList.remove('active');
-      currentBannerIndex = (currentBannerIndex + 1) % bannerImages.length;
-      bannerImages[currentBannerIndex].classList.add('active');
+    function showSlide(index) {
+      heroSlides[currentSlide].classList.remove('active');
+      heroDots[currentSlide].classList.remove('active');
+      currentSlide = index;
+      heroSlides[currentSlide].classList.add('active');
+      heroDots[currentSlide].classList.add('active');
     }
-    
-    // Initialize the first banner
-    bannerImages[0].classList.add('active');
-    setInterval(rotateBanner, 5000);
+
+    heroDots.forEach((dot, index) => dot.addEventListener('click', () => showSlide(index)));
+    if (heroSlides.length > 1) {
+      setInterval(() => showSlide((currentSlide + 1) % heroSlides.length), 7000);
+    }
 
     // Slider Functions
     function slideLeft() {
